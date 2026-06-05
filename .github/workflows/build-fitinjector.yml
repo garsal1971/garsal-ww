@@ -28,36 +28,6 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x FitStepsInjector/gradlew
 
-      - name: Setup Keystore
-        id: keystore
-        run: |
-          mkdir -p /tmp/keystore-setup
-          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
-            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > /tmp/keystore-setup/fitinjector.keystore
-            echo "generated=false" >> $GITHUB_OUTPUT
-          else
-            KS_PASS="GarsalApps2026"
-            keytool -genkeypair -v \
-              -keystore /tmp/keystore-setup/fitinjector.keystore \
-              -alias fitinjector \
-              -keyalg RSA -keysize 2048 \
-              -validity 10000 \
-              -storepass "$KS_PASS" \
-              -keypass "$KS_PASS" \
-              -dname "CN=Garsal, OU=Dev, O=Garsal, L=IT, S=IT, C=IT"
-            echo "generated=true" >> $GITHUB_OUTPUT
-            echo "KS_PATH=/tmp/keystore-setup/fitinjector.keystore" >> $GITHUB_ENV
-            echo "KS_ALIAS=fitinjector" >> $GITHUB_ENV
-            echo "KS_PASS=$KS_PASS" >> $GITHUB_ENV
-          fi
-
-      - name: Set keystore env from secret
-        if: secrets.KEYSTORE_BASE64 != ''
-        run: |
-          echo "KS_PATH=/tmp/keystore-setup/fitinjector.keystore" >> $GITHUB_ENV
-          echo "KS_ALIAS=${{ secrets.KEY_ALIAS || 'fitinjector' }}" >> $GITHUB_ENV
-          echo "KS_PASS=${{ secrets.KEY_PASSWORD || 'GarsalApps2026' }}" >> $GITHUB_ENV
-
       - name: Build FitStepsInjector debug APK
         working-directory: FitStepsInjector
         run: ./gradlew :app:assembleDebug --no-daemon
@@ -68,11 +38,3 @@ jobs:
           name: FitStepsInjector-debug-${{ github.run_number }}
           path: FitStepsInjector/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
-
-      - name: Upload auto-generated keystore (first run only)
-        if: steps.keystore.outputs.generated == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: fitinjector-keystore-SAVE-THIS
-          path: /tmp/keystore-setup/
-          retention-days: 7
