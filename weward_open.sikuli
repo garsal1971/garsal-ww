@@ -1,0 +1,37 @@
+# weward_open.sikuli
+# Apre WeWard in LDPlayer e naviga per far scattare una richiesta HTTP
+# Le coordinate si riferiscono alla finestra LDPlayer in posizione default
+
+import time
+
+STEP_DELAY = 3  # secondi tra un'azione e l'altra
+
+# Coordinate icona WeWard nella home di LDPlayer
+WEWARD_ICON_X = 354
+WEWARD_ICON_Y = 163
+
+# Coordinate centro schermata (per navigare nell'app)
+CENTER_X = 214
+CENTER_Y = 400
+
+print("=== WeWard Token Capture ===")
+
+# 1. Porta il focus su LDPlayer
+App.focus("LDPlayer")
+wait(STEP_DELAY)
+
+# 2. Clicca sull'icona WeWard
+print("Apertura WeWard...")
+click(Location(WEWARD_ICON_X, WEWARD_ICON_Y))
+wait(5)  # attendi caricamento app
+
+# 3. Tocca il centro dello schermo per far partire le richieste HTTP
+print("Navigazione per catturare token...")
+click(Location(CENTER_X, CENTER_Y))
+wait(STEP_DELAY)
+
+# 4. Tocca ancora una volta per sicurezza
+click(Location(CENTER_X, 300))
+wait(STEP_DELAY)
+
+print("=== Navigazione completata ===")
