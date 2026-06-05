@@ -28,35 +28,6 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x FitStepsInjector/gradlew
 
-      - name: Setup Keystore
-        id: keystore
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: |
-          mkdir -p /tmp/keystore-setup
-          KS_PATH=/tmp/keystore-setup/fitinjector.keystore
-          KS_ALIAS="${KEY_ALIAS:-fitinjector}"
-          KS_PASS="${KEY_PASSWORD:-GarsalApps2026}"
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 -d > "$KS_PATH"
-            echo "generated=false" >> $GITHUB_OUTPUT
-          else
-            keytool -genkeypair -v \
-              -keystore "$KS_PATH" \
-              -alias "$KS_ALIAS" \
-              -keyalg RSA -keysize 2048 \
-              -validity 10000 \
-              -storepass "$KS_PASS" \
-              -keypass "$KS_PASS" \
-              -dname "CN=Garsal, OU=Dev, O=Garsal, L=IT, S=IT, C=IT"
-            echo "generated=true" >> $GITHUB_OUTPUT
-          fi
-          echo "KS_PATH=$KS_PATH" >> $GITHUB_ENV
-          echo "KS_ALIAS=$KS_ALIAS" >> $GITHUB_ENV
-          echo "KS_PASS=$KS_PASS" >> $GITHUB_ENV
-
       - name: Build FitStepsInjector debug APK
         working-directory: FitStepsInjector
         run: ./gradlew :app:assembleDebug --no-daemon
@@ -67,11 +38,3 @@ jobs:
           name: FitStepsInjector-debug-${{ github.run_number }}
           path: FitStepsInjector/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
-
-      - name: Upload auto-generated keystore (first run only)
-        if: steps.keystore.outputs.generated == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: fitinjector-keystore-SAVE-THIS
-          path: /tmp/keystore-setup/
-          retention-days: 7
