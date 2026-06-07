@@ -28,9 +28,19 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x FitStepsInjector/gradlew
 
+      - name: Debug SDK environment
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          ls ${ANDROID_HOME}/platforms/ 2>/dev/null || echo "no platforms dir"
+          ls ${ANDROID_HOME}/build-tools/ 2>/dev/null || echo "no build-tools dir"
+
+      - name: Create local.properties
+        run: echo "sdk.dir=${ANDROID_HOME}" > FitStepsInjector/local.properties
+
       - name: Build FitStepsInjector debug APK
         working-directory: FitStepsInjector
-        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace 2>&1
 
       - name: Upload debug APK as artifact
         uses: actions/upload-artifact@v4
