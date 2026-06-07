@@ -32,6 +32,23 @@ jobs:
         working-directory: FitStepsInjector
         run: ./gradlew :app:assembleDebug --no-daemon
 
+      - name: Print debug keystore SHA-1 (register this in Google Cloud Console)
+        run: |
+          mkdir -p ~/.android
+          [ -f ~/.android/debug.keystore ] || keytool -genkeypair -v \
+            -keystore ~/.android/debug.keystore \
+            -alias androiddebugkey -keyalg RSA -keysize 2048 \
+            -validity 10000 -storepass android -keypass android \
+            -dname "CN=Android Debug,O=Android,C=US"
+          echo "======================================================="
+          echo "  SHA-1 DEL DEBUG KEYSTORE (usa questo in Google Cloud)"
+          echo "======================================================="
+          keytool -list -v \
+            -keystore ~/.android/debug.keystore \
+            -alias androiddebugkey \
+            -storepass android | grep "SHA1:"
+          echo "======================================================="
+
       - name: Upload debug APK as artifact
         uses: actions/upload-artifact@v4
         with:
