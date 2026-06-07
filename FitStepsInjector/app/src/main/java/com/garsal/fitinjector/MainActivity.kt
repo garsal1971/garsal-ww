@@ -18,6 +18,7 @@ import com.google.android.gms.fitness.data.DataPoint
 import com.google.android.gms.fitness.data.DataSet
 import com.google.android.gms.fitness.data.DataSource
 import com.google.android.gms.fitness.data.DataType
+import com.google.android.gms.fitness.data.Field
 import java.io.File
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
@@ -178,14 +179,11 @@ class MainActivity : AppCompatActivity() {
             .build()
 
         // Build data set with a single data point covering midnight → now
-        val dataSet = DataSet.builder(dataSource)
-            .add(
-                DataPoint.builder(dataSource)
-                    .setField(com.google.android.gms.fitness.data.Field.FIELD_STEPS, steps)
-                    .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
-                    .build()
-            )
-            .build()
+        val dataSet = DataSet.create(dataSource)
+        val dataPoint = dataSet.createDataPoint()
+            .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
+        dataPoint.getValue(Field.FIELD_STEPS).setInt(steps)
+        dataSet.add(dataPoint)
 
         // Insert into Google Fit History
         Fitness.getHistoryClient(this, account)
