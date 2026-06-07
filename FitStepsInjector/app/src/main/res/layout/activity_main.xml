@@ -1,18 +1,292 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center"
-    android:orientation="vertical"
-    android:padding="24dp">
+    android:background="#F5F5F5">
 
-    <TextView
-        android:id="@+id/statusText"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:text="@string/status_initializing"
-        android:textSize="18sp"
-        android:textColor="@android:color/black" />
+        android:orientation="vertical"
+        android:padding="16dp">
 
-</LinearLayout>
+        <!-- ACCOUNT CARD -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Account Google Fit"
+                    android:textSize="14sp"
+                    android:textColor="#757575"
+                    android:textAllCaps="true"
+                    android:layout_marginBottom="12dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:id="@+id/imgAccountIcon"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@android:drawable/ic_menu_myplaces"
+                        android:layout_marginEnd="12dp"/>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvAccountName"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Non connesso"
+                            android:textSize="16sp"
+                            android:textColor="#212121"
+                            android:textStyle="bold"/>
+
+                        <TextView
+                            android:id="@+id/tvAccountEmail"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Premi Connetti per autorizzare Google Fit"
+                            android:textSize="12sp"
+                            android:textColor="#9E9E9E"/>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="12dp">
+
+                    <Button
+                        android:id="@+id/btnSignIn"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:text="Connetti"
+                        android:backgroundTint="#2196F3"/>
+
+                    <Button
+                        android:id="@+id/btnSignOut"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        android:text="Disconnetti"
+                        android:backgroundTint="#F44336"
+                        android:enabled="false"/>
+                </LinearLayout>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- LEGGI PASSI CARD -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Passi di oggi"
+                    android:textSize="14sp"
+                    android:textColor="#757575"
+                    android:textAllCaps="true"
+                    android:layout_marginBottom="12dp"/>
+
+                <TextView
+                    android:id="@+id/tvCurrentSteps"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="—"
+                    android:textSize="48sp"
+                    android:textColor="#2196F3"
+                    android:textStyle="bold"
+                    android:layout_gravity="center_horizontal"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="passi"
+                    android:textSize="14sp"
+                    android:textColor="#9E9E9E"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="12dp"/>
+
+                <Button
+                    android:id="@+id/btnReadSteps"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Aggiorna lettura"
+                    android:backgroundTint="#4CAF50"
+                    android:enabled="false"/>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- IMPOSTA PASSI CARD -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Imposta passi"
+                    android:textSize="14sp"
+                    android:textColor="#757575"
+                    android:textAllCaps="true"
+                    android:layout_marginBottom="12dp"/>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Numero di passi"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_marginBottom="12dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etStepCount"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        android:imeOptions="actionDone"
+                        android:maxLength="7"/>
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Preset rapidi:"
+                    android:textSize="12sp"
+                    android:textColor="#9E9E9E"
+                    android:layout_marginBottom="8dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="12dp">
+
+                    <Button
+                        android:id="@+id/btn5k"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="4dp"
+                        android:text="5k"/>
+
+                    <Button
+                        android:id="@+id/btn10k"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="4dp"
+                        android:layout_marginStart="4dp"
+                        android:text="10k"/>
+
+                    <Button
+                        android:id="@+id/btn15k"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="4dp"
+                        android:layout_marginStart="4dp"
+                        android:text="15k"/>
+
+                    <Button
+                        android:id="@+id/btn21k"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="4dp"
+                        android:text="21k"/>
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/btnInjectSteps"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Inserisci in Google Fit"
+                    android:backgroundTint="#2196F3"
+                    android:enabled="false"/>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- LOG CARD -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Log"
+                    android:textSize="14sp"
+                    android:textColor="#757575"
+                    android:textAllCaps="true"
+                    android:layout_marginBottom="8dp"/>
+
+                <TextView
+                    android:id="@+id/tvLog"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="In attesa..."
+                    android:textSize="13sp"
+                    android:textColor="#424242"
+                    android:fontFamily="monospace"
+                    android:lineSpacingMultiplier="1.4"/>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+    </LinearLayout>
+</ScrollView>
