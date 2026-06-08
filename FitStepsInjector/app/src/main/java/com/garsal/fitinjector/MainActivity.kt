@@ -18,6 +18,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.fitness.Fitness
 import com.google.android.gms.fitness.FitnessOptions
 import com.google.android.gms.fitness.data.DataPoint
@@ -45,6 +46,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var stepsInput: EditText
     private lateinit var injectButton: Button
     private lateinit var refreshButton: Button
+    private lateinit var disconnectButton: Button
 
     private var pendingSteps: Int = -1
     private var pendingAction: PendingAction = PendingAction.NONE
@@ -67,6 +69,11 @@ class MainActivity : AppCompatActivity() {
         stepsInput = findViewById(R.id.stepsInput)
         injectButton = findViewById(R.id.injectButton)
         refreshButton = findViewById(R.id.refreshButton)
+        disconnectButton = findViewById(R.id.disconnectButton)
+
+        disconnectButton.setOnClickListener {
+            disconnectGoogleFit()
+        }
 
         refreshButton.setOnClickListener {
             pendingAction = PendingAction.READ
@@ -222,6 +229,17 @@ class MainActivity : AppCompatActivity() {
                 checkGoogleFitAuth()
             } else {
                 updateStatus("Permesso storage negato")
+            }
+        }
+    }
+
+    private fun disconnectGoogleFit() {
+        val client = GoogleSignIn.getClient(this, GoogleSignInOptions.DEFAULT_SIGN_IN)
+        client.revokeAccess().addOnCompleteListener {
+            client.signOut().addOnCompleteListener {
+                currentStepsText.text = "—"
+                updateStatus("Disconnesso da Google Fit")
+                Log.d(TAG, "Disconnesso da Google Fit")
             }
         }
     }
