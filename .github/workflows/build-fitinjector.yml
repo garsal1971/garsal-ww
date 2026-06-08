@@ -28,16 +28,29 @@ jobs:
       - name: Write google-services.json
         run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > FitStepsInjector/app/google-services.json
 
+      - name: Decode keystore
+        run: echo '${{ secrets.KEYSTORE_BASE64 }}' | base64 -d > FitStepsInjector/fitinjector.jks
+
       - name: Make gradlew executable
         run: chmod +x FitStepsInjector/gradlew
 
-      - name: Build FitStepsInjector debug APK
+      - name: Build FitStepsInjector release APK
         working-directory: FitStepsInjector
-        run: ./gradlew :app:assembleDebug --no-daemon
+        env:
+          KEYSTORE_PATH: ../fitinjector.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          ./gradlew :app:assembleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file=$KEYSTORE_PATH \
+            -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
+            -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
+            -Pandroid.injected.signing.key.password=$KEY_PASSWORD
 
-      - name: Upload debug APK as artifact
+      - name: Upload release APK as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FitStepsInjector-debug-${{ github.run_number }}
-          path: FitStepsInjector/app/build/outputs/apk/debug/app-debug.apk
+          name: FitStepsInjector-release-${{ github.run_number }}
+          path: FitStepsInjector/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
