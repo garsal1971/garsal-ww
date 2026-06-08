@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F5F5">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="SilentMockGPS"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#2E7D32"/>
+
+        <TextView
+            android:id="@+id/versionText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textColor="#9E9E9E"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Coordinate -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#FFFFFF"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp"
+            android:elevation="4dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Coordinate (lat,lon — una per riga)"
+                android:textSize="13sp"
+                android:textColor="#757575"
+                android:layout_marginBottom="8dp"/>
+
+            <EditText
+                android:id="@+id/coordinatesInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minLines="4"
+                android:maxLines="10"
+                android:gravity="top"
+                android:inputType="textMultiLine"
+                android:hint="45.4642,9.1900&#10;45.4650,9.1920&#10;45.4660,9.1940"
+                android:textSize="15sp"
+                android:fontFamily="monospace"
+                android:padding="10dp"
+                android:background="@android:drawable/edit_text"/>
+        </LinearLayout>
+
+        <!-- Secondi e Minuti -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:background="#FFFFFF"
+                android:padding="16dp"
+                android:layout_marginEnd="6dp"
+                android:elevation="4dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Secondi per coord."
+                    android:textSize="12sp"
+                    android:textColor="#757575"
+                    android:layout_marginBottom="6dp"/>
+
+                <EditText
+                    android:id="@+id/secondsInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="30"
+                    android:inputType="number"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:padding="8dp"
+                    android:background="@android:drawable/edit_text"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:background="#FFFFFF"
+                android:padding="16dp"
+                android:layout_marginStart="6dp"
+                android:elevation="4dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Durata totale (min)"
+                    android:textSize="12sp"
+                    android:textColor="#757575"
+                    android:layout_marginBottom="6dp"/>
+
+                <EditText
+                    android:id="@+id/minutesInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="30"
+                    android:inputType="number"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:padding="8dp"
+                    android:background="@android:drawable/edit_text"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Bottoni -->
+        <Button
+            android:id="@+id/startButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="▶  Avvia Posizioni Fake"
+            android:textSize="16sp"
+            android:backgroundTint="#2E7D32"
+            android:textColor="#FFFFFF"
+            android:padding="14dp"
+            android:layout_marginBottom="8dp"/>
+
+        <Button
+            android:id="@+id/stopButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="■  Ferma"
+            android:textSize="16sp"
+            android:backgroundTint="#C62828"
+            android:textColor="#FFFFFF"
+            android:padding="14dp"
+            android:enabled="false"/>
+
+        <!-- Status -->
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="14sp"
+            android:textColor="#616161"
+            android:gravity="center"
+            android:padding="16dp"/>
+
+    </LinearLayout>
+</ScrollView>
