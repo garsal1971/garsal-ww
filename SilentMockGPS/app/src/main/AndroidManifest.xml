@@ -28,6 +28,15 @@
             android:foregroundServiceType="location"
             android:exported="false" />
 
+        <!-- Receiver per ADB: adb shell am broadcast -a com.garsal.silentmockgps.SET_LOCATION --es lat "45.46" --es lon "9.19" -->
+        <receiver
+            android:name=".MockLocationReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.garsal.silentmockgps.SET_LOCATION" />
+            </intent-filter>
+        </receiver>
+
         <receiver
             android:name=".BootReceiver"
             android:exported="true">
