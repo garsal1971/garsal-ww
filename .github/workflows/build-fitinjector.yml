@@ -28,30 +28,38 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x FitStepsInjector/gradlew
 
-      - name: Build FitStepsInjector debug APK
-        working-directory: FitStepsInjector
-        run: ./gradlew :app:assembleDebug --no-daemon
-
-      - name: Print debug keystore SHA-1 (register this in Google Cloud Console)
+      - name: Restore fixed signing keystore
         run: |
           mkdir -p ~/.android
-          [ -f ~/.android/debug.keystore ] || keytool -genkeypair -v \
-            -keystore ~/.android/debug.keystore \
-            -alias androiddebugkey -keyalg RSA -keysize 2048 \
-            -validity 10000 -storepass android -keypass android \
-            -dname "CN=Android Debug,O=Android,C=US"
-          echo "======================================================="
-          echo "  SHA-1 DEL DEBUG KEYSTORE (usa questo in Google Cloud)"
-          echo "======================================================="
-          keytool -list -v \
-            -keystore ~/.android/debug.keystore \
-            -alias androiddebugkey \
-            -storepass android | grep "SHA1:"
-          echo "======================================================="
+          echo "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" | base64 -d > ~/.android/fitinjector.jks
+          echo "Keystore ripristinato"
+          echo "SHA-1 fisso: 9E:0D:F1:6D:F2:FF:DE:A5:1B:43:26:E4:B8:30:B1:8F:15:53:D9:C1"
 
-      - name: Upload debug APK as artifact
+      - name: Build FitStepsInjector debug APK
+        working-directory: FitStepsInjector
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/../../../home/runner/.android/fitinjector.jks
+        run: ./gradlew :app:assembleDebug --no-daemon
+
+      - name: Sign APK with fixed keystore
+        run: |
+          APK=FitStepsInjector/app/build/outputs/apk/debug/app-debug.apk
+          SIGNED_APK=FitStepsInjector/app/build/outputs/apk/debug/app-debug-signed.apk
+          # align
+          ${ANDROID_HOME}/build-tools/$(ls ${ANDROID_HOME}/build-tools/ | tail -1)/zipalign -v 4 $APK /tmp/aligned.apk
+          # sign with fixed keystore
+          ${ANDROID_HOME}/build-tools/$(ls ${ANDROID_HOME}/build-tools/ | tail -1)/apksigner sign \
+            --ks ~/.android/fitinjector.jks \
+            --ks-key-alias fitinjector \
+            --ks-pass pass:fitinjector123 \
+            --key-pass pass:fitinjector123 \
+            --out $SIGNED_APK \
+            /tmp/aligned.apk
+          echo "APK firmato con SHA-1: 9E:0D:F1:6D:F2:FF:DE:A5:1B:43:26:E4:B8:30:B1:8F:15:53:D9:C1"
+
+      - name: Upload signed APK as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FitStepsInjector-debug-${{ github.run_number }}
-          path: FitStepsInjector/app/build/outputs/apk/debug/app-debug.apk
+          name: FitStepsInjector-signed-${{ github.run_number }}
+          path: FitStepsInjector/app/build/outputs/apk/debug/app-debug-signed.apk
           retention-days: 30
