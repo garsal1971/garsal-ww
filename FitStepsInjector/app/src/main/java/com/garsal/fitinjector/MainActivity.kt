@@ -9,7 +9,10 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
 import android.util.Log
+import android.widget.Button
+import android.widget.EditText
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -21,6 +24,8 @@ import com.google.android.gms.fitness.data.DataPoint
 import com.google.android.gms.fitness.data.DataSet
 import com.google.android.gms.fitness.data.DataSource
 import com.google.android.gms.fitness.data.DataType
+import com.google.android.gms.fitness.data.Field
+import com.google.android.gms.fitness.request.DataReadRequest
 import java.io.File
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
@@ -32,121 +37,159 @@ class MainActivity : AppCompatActivity() {
         private const val RC_SIGN_IN = 1001
         private const val RC_STORAGE_PERMISSION = 1002
         private const val RC_MANAGE_STORAGE = 1003
-        private const val INPUT_FILE = "/sdcard/steps_input.txt"
         private const val RESULT_FILE = "/sdcard/steps_result.txt"
     }
 
     private lateinit var statusText: TextView
-    private var stepCount: Int = 0
+    private lateinit var currentStepsText: TextView
+    private lateinit var stepsInput: EditText
+    private lateinit var injectButton: Button
+    private lateinit var refreshButton: Button
+
+    private var pendingSteps: Int = -1
+    private var pendingAction: PendingAction = PendingAction.NONE
+
+    private enum class PendingAction { NONE, READ, INJECT }
 
     private val fitnessOptions: FitnessOptions by lazy {
         FitnessOptions.builder()
             .addDataType(DataType.TYPE_STEP_COUNT_DELTA, FitnessOptions.ACCESS_WRITE)
-            .addDataType(DataType.AGGREGATE_STEP_COUNT_DELTA, FitnessOptions.ACCESS_WRITE)
+            .addDataType(DataType.AGGREGATE_STEP_COUNT_DELTA, FitnessOptions.ACCESS_READ)
             .build()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
         statusText = findViewById(R.id.statusText)
+        currentStepsText = findViewById(R.id.currentStepsText)
+        stepsInput = findViewById(R.id.stepsInput)
+        injectButton = findViewById(R.id.injectButton)
+        refreshButton = findViewById(R.id.refreshButton)
 
-        updateStatus("Starting...")
-        Log.d(TAG, "onCreate: FitStepsInjector launched")
+        refreshButton.setOnClickListener {
+            pendingAction = PendingAction.READ
+            checkGoogleFitAuth()
+        }
 
-        checkStoragePermissionAndProceed()
-    }
-
-    private fun checkStoragePermissionAndProceed() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (Environment.isExternalStorageManager()) {
-                proceedWithReadingSteps()
-            } else {
-                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-                intent.data = Uri.parse("package:$packageName")
-                startActivityForResult(intent, RC_MANAGE_STORAGE)
+        injectButton.setOnClickListener {
+            val input = stepsInput.text.toString().trim()
+            val steps = input.toIntOrNull()
+            if (steps == null || steps < 0) {
+                Toast.makeText(this, "Inserisci un numero valido di passi", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(
-                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-                ),
-                RC_STORAGE_PERMISSION
-            )
-        } else {
-            proceedWithReadingSteps()
+            pendingSteps = steps
+            pendingAction = PendingAction.INJECT
+            checkGoogleFitAuth()
         }
+
+        // Carica i passi attuali all'avvio
+        pendingAction = PendingAction.READ
+        checkGoogleFitAuth()
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == RC_STORAGE_PERMISSION) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                proceedWithReadingSteps()
-            } else {
-                writeResult("ERROR:Storage permission denied")
-                updateStatus("ERROR: Storage permission denied")
-                finish()
-            }
-        }
-    }
-
-    private fun proceedWithReadingSteps() {
-        // Read step count from input file
-        val inputFile = File(INPUT_FILE)
-        if (!inputFile.exists()) {
-            writeResult("ERROR:Input file not found: $INPUT_FILE")
-            updateStatus("ERROR: $INPUT_FILE not found")
-            Log.e(TAG, "Input file not found: $INPUT_FILE")
-            finish()
-            return
-        }
-
-        val content = inputFile.readText().trim()
-        val parsed = content.toIntOrNull()
-        if (parsed == null || parsed < 0) {
-            writeResult("ERROR:Invalid step count in file: '$content'")
-            updateStatus("ERROR: Invalid step count: '$content'")
-            Log.e(TAG, "Invalid step count: '$content'")
-            finish()
-            return
-        }
-
-        stepCount = parsed
-        updateStatus("Read $stepCount steps from file. Checking Google Sign-In...")
-        Log.d(TAG, "Step count read: $stepCount")
-
-        checkGoogleSignInAndInsert()
-    }
-
-    private fun checkGoogleSignInAndInsert() {
+    private fun checkGoogleFitAuth() {
         val account = GoogleSignIn.getAccountForExtension(this, fitnessOptions)
-
         if (!GoogleSignIn.hasPermissions(account, fitnessOptions)) {
-            // Need to request OAuth / sign-in
-            updateStatus("Requesting Google Fit authorization...")
-            Log.d(TAG, "No Fit permissions found, launching sign-in flow")
-
-            GoogleSignIn.requestPermissions(
-                this,
-                RC_SIGN_IN,
-                account,
-                fitnessOptions
-            )
+            updateStatus("Richiesta autorizzazione Google Fit...")
+            GoogleSignIn.requestPermissions(this, RC_SIGN_IN, account, fitnessOptions)
         } else {
-            // Already authorized
-            Log.d(TAG, "Already authorized. Inserting steps...")
-            insertSteps(account, stepCount)
+            executePendingAction(account)
         }
+    }
+
+    private fun executePendingAction(account: GoogleSignInAccount) {
+        when (pendingAction) {
+            PendingAction.READ -> readCurrentSteps(account)
+            PendingAction.INJECT -> injectSteps(account, pendingSteps)
+            PendingAction.NONE -> {}
+        }
+    }
+
+    private fun readCurrentSteps(account: GoogleSignInAccount) {
+        updateStatus("Lettura passi in corso...")
+        val calendar = Calendar.getInstance()
+        val endTime = calendar.timeInMillis
+        calendar.set(Calendar.HOUR_OF_DAY, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        val startTime = calendar.timeInMillis
+
+        val readRequest = DataReadRequest.Builder()
+            .aggregate(DataType.TYPE_STEP_COUNT_DELTA, DataType.AGGREGATE_STEP_COUNT_DELTA)
+            .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
+            .bucketByTime(1, TimeUnit.DAYS)
+            .build()
+
+        Fitness.getHistoryClient(this, account)
+            .readData(readRequest)
+            .addOnSuccessListener { response ->
+                var totalSteps = 0
+                for (bucket in response.buckets) {
+                    for (dataSet in bucket.dataSets) {
+                        for (dp in dataSet.dataPoints) {
+                            totalSteps += dp.getValue(Field.FIELD_STEPS).asInt()
+                        }
+                    }
+                }
+                currentStepsText.text = totalSteps.toString()
+                updateStatus("Aggiornato")
+                Log.d(TAG, "Passi letti: $totalSteps")
+            }
+            .addOnFailureListener { e ->
+                updateStatus("Errore lettura: ${e.message}")
+                Log.e(TAG, "Errore lettura passi", e)
+            }
+    }
+
+    private fun injectSteps(account: GoogleSignInAccount, steps: Int) {
+        updateStatus("Iniezione di $steps passi in corso...")
+        injectButton.isEnabled = false
+
+        val calendar = Calendar.getInstance()
+        val endTime = calendar.timeInMillis
+        calendar.set(Calendar.HOUR_OF_DAY, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        val startTime = calendar.timeInMillis
+
+        val dataSource = DataSource.Builder()
+            .setAppPackageName(this)
+            .setDataType(DataType.TYPE_STEP_COUNT_DELTA)
+            .setStreamName("FitStepsInjector")
+            .setType(DataSource.TYPE_RAW)
+            .build()
+
+        val dataSet = DataSet.builder(dataSource)
+            .add(
+                DataPoint.builder(dataSource)
+                    .setField(Field.FIELD_STEPS, steps)
+                    .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
+                    .build()
+            )
+            .build()
+
+        Fitness.getHistoryClient(this, account)
+            .insertData(dataSet)
+            .addOnSuccessListener {
+                writeResult("OK:$steps")
+                updateStatus("✓ $steps passi inseriti con successo!")
+                currentStepsText.text = steps.toString()
+                stepsInput.text.clear()
+                injectButton.isEnabled = true
+                Log.d(TAG, "Iniezione riuscita: $steps passi")
+            }
+            .addOnFailureListener { e ->
+                val errorMsg = e.message ?: "Errore sconosciuto"
+                writeResult("ERROR:$errorMsg")
+                updateStatus("✗ Errore: $errorMsg")
+                injectButton.isEnabled = true
+                Log.e(TAG, "Iniezione fallita", e)
+            }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -154,95 +197,44 @@ class MainActivity : AppCompatActivity() {
 
         if (requestCode == RC_MANAGE_STORAGE) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Environment.isExternalStorageManager()) {
-                proceedWithReadingSteps()
+                checkGoogleFitAuth()
             } else {
-                writeResult("ERROR:Storage permission denied")
-                updateStatus("ERROR: Storage permission denied")
-                finish()
+                updateStatus("Permesso file negato")
             }
             return
         }
 
         if (requestCode == RC_SIGN_IN) {
             if (resultCode == RESULT_OK) {
-                Log.d(TAG, "Sign-in successful, proceeding to insert steps")
                 val account = GoogleSignIn.getAccountForExtension(this, fitnessOptions)
-                insertSteps(account, stepCount)
+                executePendingAction(account)
             } else {
-                val errorMsg = "Google Sign-In failed or cancelled (resultCode=$resultCode)"
-                writeResult("ERROR:$errorMsg")
-                updateStatus("ERROR: $errorMsg")
-                Log.e(TAG, errorMsg)
-                finish()
+                updateStatus("Autorizzazione Google Fit negata")
+                Log.e(TAG, "Sign-in fallito, resultCode=$resultCode")
             }
         }
     }
 
-    private fun insertSteps(account: GoogleSignInAccount, steps: Int) {
-        updateStatus("Inserting $steps steps into Google Fit...")
-        Log.d(TAG, "insertSteps: count=$steps")
-
-        // Calculate time window: midnight today → now
-        val calendar = Calendar.getInstance()
-        val endTime = calendar.timeInMillis
-
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        val startTime = calendar.timeInMillis
-
-        Log.d(TAG, "Time window: $startTime → $endTime")
-
-        // Build data source
-        val dataSource = DataSource.Builder()
-            .setAppPackageName(this)
-            .setDataType(DataType.TYPE_STEP_COUNT_DELTA)
-            .setStreamName("FitStepsInjector - step count")
-            .setType(DataSource.TYPE_RAW)
-            .build()
-
-        // Build data set with a single data point covering midnight → now
-        val dataSet = DataSet.builder(dataSource)
-            .add(
-                DataPoint.builder(dataSource)
-                    .setField(com.google.android.gms.fitness.data.Field.FIELD_STEPS, steps)
-                    .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
-                    .build()
-            )
-            .build()
-
-        // Insert into Google Fit History
-        Fitness.getHistoryClient(this, account)
-            .insertData(dataSet)
-            .addOnSuccessListener {
-                val result = "OK:$steps"
-                writeResult(result)
-                updateStatus("Success! Inserted $steps steps.")
-                Log.d(TAG, "insertData success: $result")
-                finish()
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == RC_STORAGE_PERMISSION) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                checkGoogleFitAuth()
+            } else {
+                updateStatus("Permesso storage negato")
             }
-            .addOnFailureListener { e ->
-                val errorMsg = e.message ?: "Unknown error"
-                writeResult("ERROR:$errorMsg")
-                updateStatus("ERROR: $errorMsg")
-                Log.e(TAG, "insertData failed: $errorMsg", e)
-                finish()
-            }
+        }
     }
 
     private fun writeResult(result: String) {
         try {
             File(RESULT_FILE).writeText(result)
-            Log.d(TAG, "Result written to $RESULT_FILE: $result")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to write result file: ${e.message}", e)
+            Log.e(TAG, "Errore scrittura file risultato: ${e.message}", e)
         }
     }
 
     private fun updateStatus(msg: String) {
-        runOnUiThread {
-            statusText.text = msg
-        }
+        runOnUiThread { statusText.text = msg }
     }
 }
