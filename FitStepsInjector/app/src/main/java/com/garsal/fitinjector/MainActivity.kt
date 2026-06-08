@@ -71,6 +71,9 @@ class MainActivity : AppCompatActivity() {
         refreshButton = findViewById(R.id.refreshButton)
         disconnectButton = findViewById(R.id.disconnectButton)
 
+        val versionText = findViewById<TextView>(R.id.versionText)
+        versionText.text = "v${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})"
+
         disconnectButton.setOnClickListener {
             disconnectGoogleFit()
         }

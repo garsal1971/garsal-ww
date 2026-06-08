@@ -47,7 +47,9 @@ jobs:
             -Pandroid.injected.signing.store.file=$KEYSTORE_PATH \
             -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
             -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
-            -Pandroid.injected.signing.key.password=$KEY_PASSWORD
+            -Pandroid.injected.signing.key.password=$KEY_PASSWORD \
+            -PversionCode=${{ github.run_number }} \
+            -PversionName="1.${{ github.run_number }}"
 
       - name: Upload release APK as artifact
         uses: actions/upload-artifact@v4

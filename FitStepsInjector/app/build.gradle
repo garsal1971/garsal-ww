@@ -12,8 +12,8 @@ android {
         applicationId "com.garsal.fitinjector"
         minSdk 26
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode (project.hasProperty('versionCode') ? project.versionCode.toInteger() : 1)
+        versionName (project.hasProperty('versionName') ? project.versionName : "1.0")
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

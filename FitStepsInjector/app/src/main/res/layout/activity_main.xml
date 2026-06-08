@@ -1,118 +1,132 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center_horizontal"
-    android:orientation="vertical"
-    android:padding="24dp"
     android:background="#F5F5F5">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="FitSteps Injector"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="#1976D2"
-        android:layout_marginBottom="32dp"/>
-
-    <!-- Card passi attuali -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
         android:orientation="vertical"
-        android:background="#FFFFFF"
-        android:padding="20dp"
-        android:layout_marginBottom="16dp"
-        android:elevation="4dp">
+        android:padding="24dp">
 
         <TextView
+            android:id="@+id/appTitleText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Passi attuali oggi"
-            android:textSize="14sp"
-            android:textColor="#757575"/>
-
-        <TextView
-            android:id="@+id/currentStepsText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="—"
-            android:textSize="48sp"
+            android:text="FitSteps Injector"
+            android:textSize="24sp"
             android:textStyle="bold"
-            android:textColor="#1976D2"
-            android:layout_marginTop="4dp"/>
-
-        <Button
-            android:id="@+id/refreshButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Aggiorna"
-            android:textSize="12sp"
-            android:layout_marginTop="8dp"
-            style="@style/Widget.AppCompat.Button.Borderless.Colored"/>
-    </LinearLayout>
-
-    <!-- Card imposta passi -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="#FFFFFF"
-        android:padding="20dp"
-        android:layout_marginBottom="16dp"
-        android:elevation="4dp">
+            android:textColor="#1976D2"/>
 
         <TextView
+            android:id="@+id/versionText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Imposta nuovi passi"
-            android:textSize="14sp"
-            android:textColor="#757575"
-            android:layout_marginBottom="12dp"/>
+            android:text=""
+            android:textSize="12sp"
+            android:textColor="#9E9E9E"
+            android:layout_marginBottom="32dp"/>
 
-        <EditText
-            android:id="@+id/stepsInput"
+        <!-- Card passi attuali -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Es: 8000"
-            android:inputType="number"
-            android:textSize="20sp"
-            android:padding="12dp"
-            android:background="@android:drawable/edit_text"/>
+            android:orientation="vertical"
+            android:background="#FFFFFF"
+            android:padding="20dp"
+            android:layout_marginBottom="16dp"
+            android:elevation="4dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Passi attuali oggi"
+                android:textSize="14sp"
+                android:textColor="#757575"/>
+
+            <TextView
+                android:id="@+id/currentStepsText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="—"
+                android:textSize="48sp"
+                android:textStyle="bold"
+                android:textColor="#1976D2"
+                android:layout_marginTop="4dp"/>
+
+            <Button
+                android:id="@+id/refreshButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Aggiorna"
+                android:textSize="12sp"
+                android:layout_marginTop="8dp"
+                style="@style/Widget.AppCompat.Button.Borderless.Colored"/>
+        </LinearLayout>
+
+        <!-- Card imposta passi -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#FFFFFF"
+            android:padding="20dp"
+            android:layout_marginBottom="16dp"
+            android:elevation="4dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Imposta nuovi passi"
+                android:textSize="14sp"
+                android:textColor="#757575"
+                android:layout_marginBottom="12dp"/>
+
+            <EditText
+                android:id="@+id/stepsInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Es: 8000"
+                android:inputType="number"
+                android:textSize="20sp"
+                android:padding="12dp"
+                android:background="@android:drawable/edit_text"/>
+
+            <Button
+                android:id="@+id/injectButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Inietta Passi in Google Fit"
+                android:textSize="16sp"
+                android:layout_marginTop="16dp"
+                android:backgroundTint="#1976D2"
+                android:textColor="#FFFFFF"
+                android:padding="14dp"/>
+        </LinearLayout>
+
+        <!-- Status -->
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="14sp"
+            android:textColor="#616161"
+            android:gravity="center"
+            android:padding="12dp"/>
 
         <Button
-            android:id="@+id/injectButton"
+            android:id="@+id/disconnectButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Inietta Passi in Google Fit"
-            android:textSize="16sp"
-            android:layout_marginTop="16dp"
-            android:backgroundTint="#1976D2"
+            android:text="Disconnetti Google Fit"
+            android:textSize="14sp"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="#E53935"
             android:textColor="#FFFFFF"
-            android:padding="14dp"/>
+            android:padding="12dp"/>
+
     </LinearLayout>
-
-    <!-- Status -->
-    <TextView
-        android:id="@+id/statusText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text=""
-        android:textSize="14sp"
-        android:textColor="#616161"
-        android:gravity="center"
-        android:padding="12dp"/>
-
-    <Button
-        android:id="@+id/disconnectButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Disconnetti Google Fit"
-        android:textSize="14sp"
-        android:layout_marginTop="8dp"
-        android:backgroundTint="#E53935"
-        android:textColor="#FFFFFF"
-        android:padding="12dp"/>
-
-</LinearLayout>
+</ScrollView>
