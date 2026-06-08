@@ -3,8 +3,11 @@ package com.garsal.fitinjector
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.Settings
 import android.util.Log
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -28,6 +31,7 @@ class MainActivity : AppCompatActivity() {
         private const val TAG = "FitStepsInjector"
         private const val RC_SIGN_IN = 1001
         private const val RC_STORAGE_PERMISSION = 1002
+        private const val RC_MANAGE_STORAGE = 1003
         private const val INPUT_FILE = "/sdcard/steps_input.txt"
         private const val RESULT_FILE = "/sdcard/steps_result.txt"
     }
@@ -50,9 +54,19 @@ class MainActivity : AppCompatActivity() {
         updateStatus("Starting...")
         Log.d(TAG, "onCreate: FitStepsInjector launched")
 
-        // Request storage permissions on Android 6+ (API 23+), not needed for legacy /sdcard on some ROMs
-        // but required for general compatibility
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+        checkStoragePermissionAndProceed()
+    }
+
+    private fun checkStoragePermissionAndProceed() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (Environment.isExternalStorageManager()) {
+                proceedWithReadingSteps()
+            } else {
+                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+                intent.data = Uri.parse("package:$packageName")
+                startActivityForResult(intent, RC_MANAGE_STORAGE)
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
             != PackageManager.PERMISSION_GRANTED
         ) {
@@ -137,6 +151,17 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == RC_MANAGE_STORAGE) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Environment.isExternalStorageManager()) {
+                proceedWithReadingSteps()
+            } else {
+                writeResult("ERROR:Storage permission denied")
+                updateStatus("ERROR: Storage permission denied")
+                finish()
+            }
+            return
+        }
 
         if (requestCode == RC_SIGN_IN) {
             if (resultCode == RESULT_OK) {
