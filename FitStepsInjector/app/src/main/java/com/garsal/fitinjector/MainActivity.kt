@@ -62,6 +62,14 @@ class MainActivity : AppCompatActivity() {
             .build()
     }
 
+    private val signInClient by lazy {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestEmail()
+            .addExtension(fitnessOptions)
+            .build()
+        GoogleSignIn.getClient(this, gso)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -120,13 +128,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkGoogleFitAuth() {
-        val account = GoogleSignIn.getAccountForExtension(this, fitnessOptions)
-        if (!GoogleSignIn.hasPermissions(account, fitnessOptions)) {
-            updateStatus("Richiesta autorizzazione Google Fit...")
-            GoogleSignIn.requestPermissions(this, RC_SIGN_IN, account, fitnessOptions)
-        } else {
-            executePendingAction(account)
-        }
+        signInClient.silentSignIn()
+            .addOnSuccessListener { account ->
+                showAccount(account)
+                if (!GoogleSignIn.hasPermissions(account, fitnessOptions)) {
+                    updateStatus("Richiesta autorizzazione Google Fit...")
+                    startActivityForResult(signInClient.signInIntent, RC_SIGN_IN)
+                } else {
+                    executePendingAction(account)
+                }
+            }
+            .addOnFailureListener {
+                updateStatus("Accedi con Google Fit...")
+                startActivityForResult(signInClient.signInIntent, RC_SIGN_IN)
+            }
     }
 
     private fun showAccount(account: GoogleSignInAccount?) {
@@ -242,13 +257,15 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (requestCode == RC_SIGN_IN) {
-            if (resultCode == RESULT_OK) {
-                val account = GoogleSignIn.getAccountForExtension(this, fitnessOptions)
-                executePendingAction(account)
-            } else {
-                updateStatus("Autorizzazione Google Fit negata")
-                Log.e(TAG, "Sign-in fallito, resultCode=$resultCode")
-            }
+            GoogleSignIn.getSignedInAccountFromIntent(data)
+                .addOnSuccessListener { account ->
+                    showAccount(account)
+                    executePendingAction(account)
+                }
+                .addOnFailureListener { e ->
+                    updateStatus("Autorizzazione Google Fit negata")
+                    Log.e(TAG, "Sign-in fallito", e)
+                }
         }
     }
 
