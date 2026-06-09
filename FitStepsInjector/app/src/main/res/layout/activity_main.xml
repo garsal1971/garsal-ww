@@ -12,22 +12,13 @@
         android:padding="24dp">
 
         <TextView
-            android:id="@+id/appTitleText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="FitSteps Injector"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:textColor="#1976D2"/>
-
-        <TextView
-            android:id="@+id/versionText"
+            android:id="@+id/accountText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text=""
-            android:textSize="12sp"
-            android:textColor="#9E9E9E"
-            android:layout_marginBottom="32dp"/>
+            android:textSize="13sp"
+            android:textColor="#616161"
+            android:layout_marginBottom="20dp"/>
 
         <!-- Card passi attuali -->
         <LinearLayout

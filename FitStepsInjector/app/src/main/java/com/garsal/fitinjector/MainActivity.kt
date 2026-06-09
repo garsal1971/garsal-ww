@@ -38,11 +38,13 @@ class MainActivity : AppCompatActivity() {
         private const val RC_SIGN_IN = 1001
         private const val RC_STORAGE_PERMISSION = 1002
         private const val RC_MANAGE_STORAGE = 1003
+        private const val RC_ACTIVITY_RECOGNITION = 1004
         private const val RESULT_FILE = "/sdcard/steps_result.txt"
     }
 
     private lateinit var statusText: TextView
     private lateinit var currentStepsText: TextView
+    private lateinit var accountText: TextView
     private lateinit var stepsInput: EditText
     private lateinit var injectButton: Button
     private lateinit var refreshButton: Button
@@ -66,13 +68,11 @@ class MainActivity : AppCompatActivity() {
 
         statusText = findViewById(R.id.statusText)
         currentStepsText = findViewById(R.id.currentStepsText)
+        accountText = findViewById(R.id.accountText)
         stepsInput = findViewById(R.id.stepsInput)
         injectButton = findViewById(R.id.injectButton)
         refreshButton = findViewById(R.id.refreshButton)
         disconnectButton = findViewById(R.id.disconnectButton)
-
-        val versionText = findViewById<TextView>(R.id.versionText)
-        versionText.text = "v${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})"
 
         disconnectButton.setOnClickListener {
             disconnectGoogleFit()
@@ -97,6 +97,21 @@ class MainActivity : AppCompatActivity() {
 
         // Carica i passi attuali all'avvio
         pendingAction = PendingAction.READ
+        requestActivityRecognitionThenLoad()
+    }
+
+    private fun requestActivityRecognitionThenLoad() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION)
+                != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.ACTIVITY_RECOGNITION),
+                    RC_ACTIVITY_RECOGNITION
+                )
+                return
+            }
+        }
         checkGoogleFitAuth()
     }
 
@@ -111,6 +126,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun executePendingAction(account: GoogleSignInAccount) {
+        val email = account.email ?: account.displayName ?: "Account sconosciuto"
+        accountText.text = "Account: $email"
         when (pendingAction) {
             PendingAction.READ -> readCurrentSteps(account)
             PendingAction.INJECT -> injectSteps(account, pendingSteps)
@@ -227,11 +244,17 @@ class MainActivity : AppCompatActivity() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == RC_STORAGE_PERMISSION) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        when (requestCode) {
+            RC_STORAGE_PERMISSION -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    checkGoogleFitAuth()
+                } else {
+                    updateStatus("Permesso storage negato")
+                }
+            }
+            RC_ACTIVITY_RECOGNITION -> {
+                // procedi anche se negato (l'errore verrà mostrato al momento della lettura)
                 checkGoogleFitAuth()
-            } else {
-                updateStatus("Permesso storage negato")
             }
         }
     }
@@ -241,6 +264,7 @@ class MainActivity : AppCompatActivity() {
         client.revokeAccess().addOnCompleteListener {
             client.signOut().addOnCompleteListener {
                 currentStepsText.text = "—"
+                accountText.text = ""
                 updateStatus("Disconnesso da Google Fit")
                 Log.d(TAG, "Disconnesso da Google Fit")
             }
