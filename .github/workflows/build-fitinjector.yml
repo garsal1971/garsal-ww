@@ -29,7 +29,8 @@ jobs:
         run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > FitStepsInjector/app/google-services.json
 
       - name: Decode keystore
-        run: echo '${{ secrets.KEYSTORE_BASE64 }}' | base64 -d > FitStepsInjector/fitinjector.jks
+        run: |
+          echo '${{ secrets.KEYSTORE_BASE64 }}' | base64 -d > ${{ github.workspace }}/fitinjector.jks
 
       - name: Make gradlew executable
         run: chmod +x FitStepsInjector/gradlew
@@ -37,7 +38,7 @@ jobs:
       - name: Build FitStepsInjector release APK
         working-directory: FitStepsInjector
         env:
-          KEYSTORE_PATH: ../fitinjector.jks
+          KEYSTORE_PATH: ${{ github.workspace }}/fitinjector.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
