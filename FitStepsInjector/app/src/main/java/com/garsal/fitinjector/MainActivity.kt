@@ -71,10 +71,9 @@ class MainActivity : AppCompatActivity() {
         accountText = findViewById(R.id.accountText)
 
         // mostra subito account se già loggato
-        GoogleSignIn.getLastSignedInAccount(this)?.email?.let {
-            accountText.text = it
-        }
+        showAccount(GoogleSignIn.getLastSignedInAccount(this))
         currentStepsText.text = "..."
+        stepsInput.setText((20000..23500).random().toString())
         stepsInput = findViewById(R.id.stepsInput)
         injectButton = findViewById(R.id.injectButton)
         refreshButton = findViewById(R.id.refreshButton)
@@ -131,10 +130,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun showAccount(account: GoogleSignInAccount?) {
+        val email = account?.email
+            ?: account?.account?.name
+            ?: account?.displayName
+        accountText.text = email ?: "—"
+    }
+
     private fun executePendingAction(account: GoogleSignInAccount) {
-        val lastAccount = GoogleSignIn.getLastSignedInAccount(this)
-        val email = lastAccount?.email ?: lastAccount?.displayName ?: account.email ?: "—"
-        accountText.text = email
+        showAccount(GoogleSignIn.getLastSignedInAccount(this) ?: account)
         when (pendingAction) {
             PendingAction.READ -> readCurrentSteps(account)
             PendingAction.INJECT -> injectSteps(account, pendingSteps)
@@ -271,7 +275,7 @@ class MainActivity : AppCompatActivity() {
         client.revokeAccess().addOnCompleteListener {
             client.signOut().addOnCompleteListener {
                 currentStepsText.text = "—"
-                accountText.text = ""
+                showAccount(null)
                 updateStatus("Disconnesso da Google Fit")
                 Log.d(TAG, "Disconnesso da Google Fit")
             }
