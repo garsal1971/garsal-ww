@@ -377,7 +377,6 @@ public class MainActivity extends Activity {
             statusText.setText("Servizio in esecuzione...");
             if (serviceStopAt > 0) startCountdown();
         }
-        updateMockStatus();
     }
 
     @Override
