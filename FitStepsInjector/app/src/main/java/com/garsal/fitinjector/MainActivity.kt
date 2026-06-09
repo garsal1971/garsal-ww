@@ -2,6 +2,7 @@ package com.garsal.fitinjector
 
 import android.Manifest
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -39,6 +40,9 @@ class MainActivity : AppCompatActivity() {
         private const val RC_STORAGE_PERMISSION = 1002
         private const val INPUT_FILE = "/sdcard/steps_input.txt"
         private const val RESULT_FILE = "/sdcard/steps_result.txt"
+        private const val PREFS_NAME = "FitStepsPrefs"
+        private const val KEY_STEP_COUNT = "step_count"
+        private const val KEY_LOG = "log"
     }
 
     private lateinit var tvAccountName: TextView
@@ -70,6 +74,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private var adbMode = false
+    private lateinit var prefs: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,8 +91,23 @@ class MainActivity : AppCompatActivity() {
         btnInjectSteps = findViewById(R.id.btnInjectSteps)
         tvLog = findViewById(R.id.tvLog)
 
+        prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        restoreState()
+
         setupButtons()
         checkAdbModeOrRefreshUI()
+    }
+
+    private fun restoreState() {
+        prefs.getString(KEY_STEP_COUNT, null)?.let { etStepCount.setText(it) }
+        prefs.getString(KEY_LOG, null)?.let { tvLog.text = it }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        prefs.edit()
+            .putString(KEY_STEP_COUNT, etStepCount.text?.toString() ?: "")
+            .apply()
     }
 
     private fun setupButtons() {
@@ -314,7 +334,9 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG, line)
         runOnUiThread {
             val current = tvLog.text.toString()
-            tvLog.text = if (current == "In attesa...") line else "$current\n$line"
+            val updated = if (current == "In attesa...") line else "$current\n$line"
+            tvLog.text = updated
+            prefs.edit().putString(KEY_LOG, updated).apply()
         }
     }
 }
