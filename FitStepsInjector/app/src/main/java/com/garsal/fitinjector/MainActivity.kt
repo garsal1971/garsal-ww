@@ -69,15 +69,14 @@ class MainActivity : AppCompatActivity() {
         statusText = findViewById(R.id.statusText)
         currentStepsText = findViewById(R.id.currentStepsText)
         accountText = findViewById(R.id.accountText)
-
-        // mostra subito account se già loggato
-        showAccount(GoogleSignIn.getLastSignedInAccount(this))
-        currentStepsText.text = "..."
-        stepsInput.setText((20000..23500).random().toString())
         stepsInput = findViewById(R.id.stepsInput)
         injectButton = findViewById(R.id.injectButton)
         refreshButton = findViewById(R.id.refreshButton)
         disconnectButton = findViewById(R.id.disconnectButton)
+
+        showAccount(GoogleSignIn.getLastSignedInAccount(this))
+        currentStepsText.text = "..."
+        stepsInput.setText((20000..23500).random().toString())
 
         disconnectButton.setOnClickListener {
             disconnectGoogleFit()
