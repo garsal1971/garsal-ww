@@ -5,39 +5,6 @@
     android:orientation="vertical"
     android:background="#F5F5F5">
 
-    <!-- Header fisso -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="#2E7D32"
-        android:padding="16dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="SilentMockGPS"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:textColor="#FFFFFF"/>
-
-        <TextView
-            android:id="@+id/versionText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="11sp"
-            android:textColor="#A5D6A7"/>
-
-        <TextView
-            android:id="@+id/mockStatusText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="12sp"
-            android:textColor="#C8E6C9"
-            android:layout_marginTop="2dp"/>
-
-    </LinearLayout>
-
     <!-- Barra stato (visibile solo quando in esecuzione) -->
     <LinearLayout
         android:id="@+id/statusBar"

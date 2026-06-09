@@ -2,7 +2,6 @@ package com.garsal.silentmockgps;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.AppOpsManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -14,7 +13,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.Process;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -36,7 +34,7 @@ public class MainActivity extends Activity {
     private EditText coordinatesInput, secondsInput, minutesInput;
     private Button startButton, stopButton, addCoordsButton;
     private Button selectAllButton, deleteButton, mapsButton, addToInputButton;
-    private TextView statusText, versionText, countdownText, mockStatusText, emptyTableText;
+    private TextView statusText, countdownText, emptyTableText;
     private LinearLayout coordTableLayout, statusBar;
 
     private final List<String> coordList = new ArrayList<>();
@@ -64,14 +62,10 @@ public class MainActivity extends Activity {
         mapsButton       = findViewById(R.id.mapsButton);
         addToInputButton = findViewById(R.id.addToInputButton);
         statusText       = findViewById(R.id.statusText);
-        versionText      = findViewById(R.id.versionText);
         countdownText    = findViewById(R.id.countdownText);
-        mockStatusText   = findViewById(R.id.mockStatusText);
         emptyTableText   = findViewById(R.id.emptyTableText);
         coordTableLayout = findViewById(R.id.coordTableLayout);
         statusBar        = findViewById(R.id.statusBar);
-
-        versionText.setText("v" + BuildConfig.VERSION_NAME + " (" + BuildConfig.VERSION_CODE + ")");
 
         startButton.setOnClickListener(v -> onStartClicked());
         stopButton.setOnClickListener(v -> onStopClicked());
@@ -98,7 +92,6 @@ public class MainActivity extends Activity {
             }
         };
 
-        updateMockStatus();
         buildCoordTable();
         requestLocationPermissions();
     }
@@ -120,8 +113,7 @@ public class MainActivity extends Activity {
 
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
-        int p = dp(10);
-        row.setPadding(dp(12), p, dp(12), p);
+        row.setPadding(dp(8), dp(3), dp(8), dp(3));
         row.setBackgroundColor(selected ? 0xFFE8F5E9 : 0xFFFFFFFF);
 
         CheckBox cb = new CheckBox(this);
@@ -136,7 +128,7 @@ public class MainActivity extends Activity {
 
         TextView tv = new TextView(this);
         tv.setText(coord);
-        tv.setTextSize(14);
+        tv.setTextSize(12);
         tv.setTypeface(Typeface.MONOSPACE);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
@@ -283,7 +275,9 @@ public class MainActivity extends Activity {
         } else {
             startService(service);
         }
+        serviceStopAt = System.currentTimeMillis() + (long) minutes * 60 * 1000;
         setRunningState(true);
+        startCountdown();
         statusText.setText("Avvio in corso...");
     }
 
@@ -333,21 +327,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    // ---- Stato mock location ----
-
-    private void updateMockStatus() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            AppOpsManager aom = (AppOpsManager) getSystemService(Context.APP_OPS_SERVICE);
-            boolean allowed = aom.checkOpNoThrow(AppOpsManager.OPSTR_MOCK_LOCATION,
-                    Process.myUid(), getPackageName()) == AppOpsManager.MODE_ALLOWED;
-            mockStatusText.setText(allowed
-                    ? "Mock Location: Attivo"
-                    : "Mock Location: NON impostato (Opzioni Sviluppatore)");
-        } else {
-            mockStatusText.setText("Imposta questa app come Mock Location nelle Opzioni Sviluppatore");
-        }
-    }
-
     // ---- Permessi ----
 
     private void requestLocationPermissions() {
@@ -378,7 +357,6 @@ public class MainActivity extends Activity {
             if (!granted) {
                 Toast.makeText(this, "Permesso posizione negato.", Toast.LENGTH_LONG).show();
             }
-            updateMockStatus();
         }
     }
 
