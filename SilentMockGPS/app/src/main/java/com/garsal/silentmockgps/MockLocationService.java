@@ -133,7 +133,14 @@ public class MockLocationService extends Service {
             lm.addTestProvider(provider, false, false, false, false,
                     true, true, true, Criteria.POWER_LOW, Criteria.ACCURACY_FINE);
         } catch (IllegalArgumentException ignored) {}
-        lm.setTestProviderEnabled(provider, true);
+        try {
+            lm.setTestProviderEnabled(provider, true);
+        } catch (SecurityException e) {
+            sendStatus("Errore: imposta questa app come Mock Location nelle Opzioni Sviluppatore", false);
+            stopCycle();
+            stopSelf();
+            return;
+        }
         Location loc = new Location(provider);
         loc.setLatitude(lat);
         loc.setLongitude(lon);

@@ -26,6 +26,7 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 public class MainActivity extends Activity {
@@ -89,6 +90,11 @@ public class MainActivity extends Activity {
                 if (msg != null) statusText.setText(msg);
                 setRunningState(running);
                 if (running && serviceStopAt > 0) startCountdown();
+                // mostra barra anche in caso di errore per qualche secondo
+                if (!running && msg != null && msg.startsWith("Errore")) {
+                    statusBar.setVisibility(View.VISIBLE);
+                    statusBar.setBackgroundColor(0xFFB71C1C);
+                }
             }
         };
 
@@ -164,7 +170,7 @@ public class MainActivity extends Activity {
             try {
                 double lat = Double.parseDouble(parts[0].trim());
                 double lon = Double.parseDouble(parts[1].trim());
-                coordList.add(String.format("%.6f, %.6f", lat, lon));
+                coordList.add(String.format(Locale.US, "%.6f, %.6f", lat, lon));
                 added++;
             } catch (NumberFormatException ignored) {}
         }
