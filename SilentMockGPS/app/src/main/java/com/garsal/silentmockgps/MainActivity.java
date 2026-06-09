@@ -2,25 +2,49 @@ package com.garsal.silentmockgps;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AppOpsManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.graphics.Typeface;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Process;
+import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class MainActivity extends Activity {
 
     private static final int REQ_LOCATION = 1;
 
     private EditText coordinatesInput, secondsInput, minutesInput;
-    private Button startButton, stopButton;
-    private TextView statusText, versionText;
+    private Button startButton, stopButton, addCoordsButton;
+    private Button selectAllButton, deleteButton, mapsButton, addToInputButton;
+    private TextView statusText, versionText, countdownText, mockStatusText, emptyTableText;
+    private LinearLayout coordTableLayout, statusBar;
+
+    private final List<String> coordList = new ArrayList<>();
+    private final Set<Integer> selectedSet = new HashSet<>();
+    private long serviceStopAt = 0;
+
+    private final Handler countdownHandler = new Handler(Looper.getMainLooper());
+    private Runnable countdownTick;
+
     private BroadcastReceiver statusReceiver;
 
     @Override
@@ -33,95 +57,196 @@ public class MainActivity extends Activity {
         minutesInput     = findViewById(R.id.minutesInput);
         startButton      = findViewById(R.id.startButton);
         stopButton       = findViewById(R.id.stopButton);
+        addCoordsButton  = findViewById(R.id.addCoordsButton);
+        selectAllButton  = findViewById(R.id.selectAllButton);
+        deleteButton     = findViewById(R.id.deleteButton);
+        mapsButton       = findViewById(R.id.mapsButton);
+        addToInputButton = findViewById(R.id.addToInputButton);
         statusText       = findViewById(R.id.statusText);
         versionText      = findViewById(R.id.versionText);
+        countdownText    = findViewById(R.id.countdownText);
+        mockStatusText   = findViewById(R.id.mockStatusText);
+        emptyTableText   = findViewById(R.id.emptyTableText);
+        coordTableLayout = findViewById(R.id.coordTableLayout);
+        statusBar        = findViewById(R.id.statusBar);
 
-        versionText.setText("v" + BuildConfig.VERSION_NAME + " (build " + BuildConfig.VERSION_CODE + ")");
+        versionText.setText("v" + BuildConfig.VERSION_NAME + " (" + BuildConfig.VERSION_CODE + ")");
 
         startButton.setOnClickListener(v -> onStartClicked());
         stopButton.setOnClickListener(v -> onStopClicked());
+        addCoordsButton.setOnClickListener(v -> onAddCoords());
+        selectAllButton.setOnClickListener(v -> onSelectAll());
+        deleteButton.setOnClickListener(v -> onDelete());
+        mapsButton.setOnClickListener(v -> onOpenMaps());
+        addToInputButton.setOnClickListener(v -> onAddToInput());
 
         statusReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 String msg = intent.getStringExtra("message");
                 boolean running = intent.getBooleanExtra("running", false);
+                serviceStopAt = intent.getLongExtra("stopAt", 0);
                 if (msg != null) statusText.setText(msg);
                 setRunningState(running);
+                if (running && serviceStopAt > 0) startCountdown();
             }
         };
 
+        updateMockStatus();
+        buildCoordTable();
         requestLocationPermissions();
     }
 
-    private void requestLocationPermissions() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return;
+    // ---- Tabella coordinate ----
 
-        boolean fineGranted = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED;
-
-        if (!fineGranted) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                requestPermissions(new String[]{
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_COARSE_LOCATION,
-                        Manifest.permission.FOREGROUND_SERVICE_LOCATION
-                }, REQ_LOCATION);
-            } else {
-                requestPermissions(new String[]{
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_COARSE_LOCATION
-                }, REQ_LOCATION);
-            }
+    private void buildCoordTable() {
+        coordTableLayout.removeAllViews();
+        emptyTableText.setVisibility(coordList.isEmpty() ? View.VISIBLE : View.GONE);
+        for (int i = 0; i < coordList.size(); i++) {
+            addRowToTable(i);
         }
+        updateActionButtons();
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        if (requestCode == REQ_LOCATION) {
-            boolean granted = grantResults.length > 0
-                    && grantResults[0] == PackageManager.PERMISSION_GRANTED;
-            if (!granted) {
-                statusText.setText("Permesso posizione negato. L'app non funzionerà.");
-                startButton.setEnabled(false);
-            }
-        }
+    private void addRowToTable(int i) {
+        String coord = coordList.get(i);
+        boolean selected = selectedSet.contains(i);
+
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        int p = dp(10);
+        row.setPadding(dp(12), p, dp(12), p);
+        row.setBackgroundColor(selected ? 0xFFE8F5E9 : 0xFFFFFFFF);
+
+        CheckBox cb = new CheckBox(this);
+        cb.setChecked(selected);
+        final int idx = i;
+        cb.setOnCheckedChangeListener((btn, checked) -> {
+            if (checked) selectedSet.add(idx);
+            else selectedSet.remove(idx);
+            row.setBackgroundColor(checked ? 0xFFE8F5E9 : 0xFFFFFFFF);
+            updateActionButtons();
+        });
+
+        TextView tv = new TextView(this);
+        tv.setText(coord);
+        tv.setTextSize(14);
+        tv.setTypeface(Typeface.MONOSPACE);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        lp.setMargins(dp(8), 0, 0, 0);
+        tv.setLayoutParams(lp);
+        tv.setOnClickListener(v -> cb.setChecked(!cb.isChecked()));
+
+        row.addView(cb);
+        row.addView(tv);
+        coordTableLayout.addView(row);
+
+        View divider = new View(this);
+        divider.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 1));
+        divider.setBackgroundColor(0xFFEEEEEE);
+        coordTableLayout.addView(divider);
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        IntentFilter filter = new IntentFilter(MockLocationService.ACTION_STATUS);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(statusReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            registerReceiver(statusReceiver, filter);
-        }
-        boolean running = MockLocationService.isRunning();
-        setRunningState(running);
-        if (running) statusText.setText("Servizio in esecuzione...");
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        unregisterReceiver(statusReceiver);
-    }
-
-    private void onStartClicked() {
-        String coordsRaw = coordinatesInput.getText().toString().trim();
-        String secondsRaw = secondsInput.getText().toString().trim();
-        String minutesRaw = minutesInput.getText().toString().trim();
-
-        if (coordsRaw.isEmpty()) {
+    private void onAddCoords() {
+        String raw = coordinatesInput.getText().toString().trim();
+        if (raw.isEmpty()) {
             Toast.makeText(this, "Inserisci almeno una coordinata", Toast.LENGTH_SHORT).show();
             return;
         }
+        int added = 0;
+        for (String line : raw.split("\\n")) {
+            line = line.trim();
+            if (line.isEmpty()) continue;
+            String[] parts = line.split("[,;\\s]+");
+            if (parts.length < 2) continue;
+            try {
+                double lat = Double.parseDouble(parts[0].trim());
+                double lon = Double.parseDouble(parts[1].trim());
+                coordList.add(String.format("%.6f, %.6f", lat, lon));
+                added++;
+            } catch (NumberFormatException ignored) {}
+        }
+        if (added > 0) {
+            coordinatesInput.setText("");
+            buildCoordTable();
+            Toast.makeText(this, added + " coordinate aggiunte", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "Nessuna coordinata valida trovata", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void onSelectAll() {
+        if (selectedSet.size() == coordList.size() && !coordList.isEmpty()) {
+            selectedSet.clear();
+        } else {
+            for (int i = 0; i < coordList.size(); i++) selectedSet.add(i);
+        }
+        buildCoordTable();
+    }
+
+    private void onDelete() {
+        List<String> newList = new ArrayList<>();
+        for (int i = 0; i < coordList.size(); i++) {
+            if (!selectedSet.contains(i)) newList.add(coordList.get(i));
+        }
+        coordList.clear();
+        coordList.addAll(newList);
+        selectedSet.clear();
+        buildCoordTable();
+    }
+
+    private void onAddToInput() {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < coordList.size(); i++) {
+            if (selectedSet.contains(i)) {
+                if (sb.length() > 0) sb.append("\n");
+                sb.append(coordList.get(i));
+            }
+        }
+        coordinatesInput.setText(sb.toString());
+    }
+
+    private void onOpenMaps() {
+        if (selectedSet.size() != 1) return;
+        int idx = selectedSet.iterator().next();
+        String coord = coordList.get(idx);
+        String[] parts = coord.split("[,\\s]+");
+        if (parts.length >= 2) {
+            String lat = parts[0].trim();
+            String lon = parts[1].trim();
+            Uri uri = Uri.parse("geo:" + lat + "," + lon + "?q=" + lat + "," + lon);
+            try {
+                startActivity(new Intent(Intent.ACTION_VIEW, uri));
+            } catch (Exception e) {
+                Toast.makeText(this, "Nessuna app Maps trovata", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private void updateActionButtons() {
+        boolean hasSelected = !selectedSet.isEmpty();
+        deleteButton.setEnabled(hasSelected);
+        mapsButton.setEnabled(selectedSet.size() == 1);
+        addToInputButton.setEnabled(hasSelected);
+        selectAllButton.setText(
+                selectedSet.size() == coordList.size() && !coordList.isEmpty() ? "Nessuno" : "Tutti");
+    }
+
+    // ---- Servizio ----
+
+    private void onStartClicked() {
+        if (coordList.isEmpty()) {
+            Toast.makeText(this, "Aggiungi almeno una coordinata nella tabella", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String secondsRaw = secondsInput.getText().toString().trim();
+        String minutesRaw = minutesInput.getText().toString().trim();
         if (secondsRaw.isEmpty() || minutesRaw.isEmpty()) {
             Toast.makeText(this, "Inserisci secondi e minuti", Toast.LENGTH_SHORT).show();
             return;
         }
-
         int seconds, minutes;
         try {
             seconds = Integer.parseInt(secondsRaw);
@@ -135,9 +260,15 @@ public class MainActivity extends Activity {
             return;
         }
 
+        StringBuilder sb = new StringBuilder();
+        for (String c : coordList) {
+            if (sb.length() > 0) sb.append("\n");
+            sb.append(c);
+        }
+
         Intent service = new Intent(this, MockLocationService.class);
         service.setAction(MockLocationService.ACTION_START);
-        service.putExtra(MockLocationService.EXTRA_COORDS, coordsRaw);
+        service.putExtra(MockLocationService.EXTRA_COORDS, sb.toString());
         service.putExtra(MockLocationService.EXTRA_SECONDS, seconds);
         service.putExtra(MockLocationService.EXTRA_MINUTES, minutes);
 
@@ -161,5 +292,118 @@ public class MainActivity extends Activity {
     private void setRunningState(boolean running) {
         startButton.setEnabled(!running);
         stopButton.setEnabled(running);
+        statusBar.setVisibility(running ? View.VISIBLE : View.GONE);
+        if (!running) {
+            countdownText.setText("");
+            stopCountdown();
+        }
+    }
+
+    // ---- Countdown ----
+
+    private void startCountdown() {
+        stopCountdown();
+        countdownTick = new Runnable() {
+            @Override
+            public void run() {
+                long remaining = serviceStopAt - System.currentTimeMillis();
+                if (remaining > 0) {
+                    long mins = remaining / 60000;
+                    long secs = (remaining % 60000) / 1000;
+                    countdownText.setText(String.format("%d:%02d", mins, secs));
+                    countdownHandler.postDelayed(this, 1000);
+                } else {
+                    countdownText.setText("0:00");
+                }
+            }
+        };
+        countdownHandler.post(countdownTick);
+    }
+
+    private void stopCountdown() {
+        if (countdownTick != null) {
+            countdownHandler.removeCallbacks(countdownTick);
+            countdownTick = null;
+        }
+    }
+
+    // ---- Stato mock location ----
+
+    private void updateMockStatus() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            AppOpsManager aom = (AppOpsManager) getSystemService(Context.APP_OPS_SERVICE);
+            boolean allowed = aom.checkOpNoThrow(AppOpsManager.OPSTR_MOCK_LOCATION,
+                    Process.myUid(), getPackageName()) == AppOpsManager.MODE_ALLOWED;
+            mockStatusText.setText(allowed
+                    ? "Mock Location: Attivo"
+                    : "Mock Location: NON impostato (Opzioni Sviluppatore)");
+        } else {
+            mockStatusText.setText("Imposta questa app come Mock Location nelle Opzioni Sviluppatore");
+        }
+    }
+
+    // ---- Permessi ----
+
+    private void requestLocationPermissions() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return;
+        boolean granted = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+        if (!granted) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                requestPermissions(new String[]{
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                        Manifest.permission.FOREGROUND_SERVICE_LOCATION
+                }, REQ_LOCATION);
+            } else {
+                requestPermissions(new String[]{
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                }, REQ_LOCATION);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == REQ_LOCATION) {
+            boolean granted = grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+            if (!granted) {
+                Toast.makeText(this, "Permesso posizione negato.", Toast.LENGTH_LONG).show();
+            }
+            updateMockStatus();
+        }
+    }
+
+    // ---- Lifecycle ----
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        IntentFilter filter = new IntentFilter(MockLocationService.ACTION_STATUS);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(statusReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(statusReceiver, filter);
+        }
+        boolean running = MockLocationService.isRunning();
+        setRunningState(running);
+        if (running) {
+            statusText.setText("Servizio in esecuzione...");
+            if (serviceStopAt > 0) startCountdown();
+        }
+        updateMockStatus();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        unregisterReceiver(statusReceiver);
+        stopCountdown();
+    }
+
+    private int dp(int dp) {
+        return Math.round(dp * getResources().getDisplayMetrics().density);
     }
 }

@@ -1,165 +1,338 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="#F5F5F5">
 
+    <!-- Header fisso -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:background="#2E7D32"
+        android:padding="16dp">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="SilentMockGPS"
-            android:textSize="24sp"
+            android:textSize="20sp"
             android:textStyle="bold"
-            android:textColor="#2E7D32"/>
+            android:textColor="#FFFFFF"/>
 
         <TextView
             android:id="@+id/versionText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="12sp"
-            android:textColor="#9E9E9E"
-            android:layout_marginBottom="24dp"/>
+            android:textSize="11sp"
+            android:textColor="#A5D6A7"/>
 
-        <!-- Coordinate -->
+        <TextView
+            android:id="@+id/mockStatusText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textColor="#C8E6C9"
+            android:layout_marginTop="2dp"/>
+
+    </LinearLayout>
+
+    <!-- Barra stato (visibile solo quando in esecuzione) -->
+    <LinearLayout
+        android:id="@+id/statusBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#1B5E20"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        android:gravity="center_vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="12sp"
+            android:textColor="#FFFFFF"
+            android:ellipsize="end"
+            android:maxLines="1"/>
+
+        <TextView
+            android:id="@+id/countdownText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#69F0AE"
+            android:layout_marginLeft="8dp"/>
+
+    </LinearLayout>
+
+    <!-- Contenuto scrollabile -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="#FFFFFF"
-            android:padding="16dp"
-            android:layout_marginBottom="12dp"
-            android:elevation="4dp">
+            android:padding="12dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Coordinate (lat,lon — una per riga)"
-                android:textSize="13sp"
-                android:textColor="#757575"
-                android:layout_marginBottom="8dp"/>
-
-            <EditText
-                android:id="@+id/coordinatesInput"
+            <!-- Card tabella coordinate -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minLines="4"
-                android:maxLines="10"
-                android:gravity="top"
-                android:inputType="textMultiLine"
-                android:hint="45.4642,9.1900&#10;45.4650,9.1920&#10;45.4660,9.1940"
-                android:textSize="15sp"
-                android:fontFamily="monospace"
-                android:padding="10dp"
-                android:background="@android:drawable/edit_text"/>
-        </LinearLayout>
-
-        <!-- Secondi e Minuti -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="12dp">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:orientation="vertical"
                 android:background="#FFFFFF"
-                android:padding="16dp"
-                android:layout_marginEnd="6dp"
-                android:elevation="4dp">
+                android:layout_marginBottom="10dp"
+                android:elevation="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingLeft="12dp"
+                    android:paddingRight="12dp"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="6dp"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Coordinate salvate"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="#424242"/>
+
+                    <Button
+                        android:id="@+id/selectAllButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:text="Tutti"
+                        android:textSize="11sp"
+                        android:paddingLeft="10dp"
+                        android:paddingRight="10dp"
+                        android:backgroundTint="#607D8B"
+                        android:textColor="#FFFFFF"/>
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/coordTableLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"/>
+
+                <TextView
+                    android:id="@+id/emptyTableText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Nessuna coordinata. Aggiungine dalla casella sotto."
+                    android:textSize="13sp"
+                    android:textColor="#9E9E9E"
+                    android:gravity="center"
+                    android:padding="16dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:paddingBottom="8dp"
+                    android:gravity="end">
+
+                    <Button
+                        android:id="@+id/mapsButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="34dp"
+                        android:text="Maps"
+                        android:textSize="11sp"
+                        android:paddingLeft="10dp"
+                        android:paddingRight="10dp"
+                        android:layout_marginRight="6dp"
+                        android:backgroundTint="#1976D2"
+                        android:textColor="#FFFFFF"
+                        android:enabled="false"/>
+
+                    <Button
+                        android:id="@+id/addToInputButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="34dp"
+                        android:text="Usa"
+                        android:textSize="11sp"
+                        android:paddingLeft="10dp"
+                        android:paddingRight="10dp"
+                        android:layout_marginRight="6dp"
+                        android:backgroundTint="#F57C00"
+                        android:textColor="#FFFFFF"
+                        android:enabled="false"/>
+
+                    <Button
+                        android:id="@+id/deleteButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="34dp"
+                        android:text="Cancella"
+                        android:textSize="11sp"
+                        android:paddingLeft="10dp"
+                        android:paddingRight="10dp"
+                        android:backgroundTint="#C62828"
+                        android:textColor="#FFFFFF"
+                        android:enabled="false"/>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- Card input nuove coordinate -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#FFFFFF"
+                android:padding="12dp"
+                android:layout_marginBottom="10dp"
+                android:elevation="2dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Secondi per coord."
+                    android:text="Aggiungi coordinate (lat,lon — una per riga)"
                     android:textSize="12sp"
                     android:textColor="#757575"
-                    android:layout_marginBottom="6dp"/>
+                    android:layout_marginBottom="8dp"/>
 
                 <EditText
-                    android:id="@+id/secondsInput"
+                    android:id="@+id/coordinatesInput"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="30"
-                    android:inputType="number"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:padding="8dp"
-                    android:background="@android:drawable/edit_text"/>
+                    android:minLines="3"
+                    android:maxLines="8"
+                    android:gravity="top"
+                    android:inputType="textMultiLine"
+                    android:hint="44.5072,11.3621&#10;44.5103,11.3595"
+                    android:textSize="14sp"
+                    android:fontFamily="monospace"
+                    android:padding="10dp"
+                    android:background="@android:drawable/edit_text"
+                    android:layout_marginBottom="8dp"/>
+
+                <Button
+                    android:id="@+id/addCoordsButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Aggiungi alla tabella"
+                    android:textSize="14sp"
+                    android:backgroundTint="#1565C0"
+                    android:textColor="#FFFFFF"/>
+
             </LinearLayout>
 
+            <!-- Impostazioni -->
             <LinearLayout
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:background="#FFFFFF"
-                android:padding="16dp"
-                android:layout_marginStart="6dp"
-                android:elevation="4dp">
+                android:orientation="horizontal"
+                android:layout_marginBottom="10dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="Durata totale (min)"
-                    android:textSize="12sp"
-                    android:textColor="#757575"
-                    android:layout_marginBottom="6dp"/>
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:background="#FFFFFF"
+                    android:padding="12dp"
+                    android:layout_marginRight="5dp"
+                    android:elevation="2dp">
 
-                <EditText
-                    android:id="@+id/minutesInput"
-                    android:layout_width="match_parent"
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Secondi per coord."
+                        android:textSize="12sp"
+                        android:textColor="#757575"
+                        android:layout_marginBottom="4dp"/>
+
+                    <EditText
+                        android:id="@+id/secondsInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="30"
+                        android:inputType="number"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:padding="6dp"
+                        android:background="@android:drawable/edit_text"/>
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:hint="30"
-                    android:inputType="number"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:padding="8dp"
-                    android:background="@android:drawable/edit_text"/>
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:background="#FFFFFF"
+                    android:padding="12dp"
+                    android:layout_marginLeft="5dp"
+                    android:elevation="2dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Durata totale (min)"
+                        android:textSize="12sp"
+                        android:textColor="#757575"
+                        android:layout_marginBottom="4dp"/>
+
+                    <EditText
+                        android:id="@+id/minutesInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="30"
+                        android:inputType="number"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:padding="6dp"
+                        android:background="@android:drawable/edit_text"/>
+
+                </LinearLayout>
+
             </LinearLayout>
+
+            <!-- Bottoni controllo -->
+            <Button
+                android:id="@+id/startButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Avvia"
+                android:textSize="16sp"
+                android:backgroundTint="#2E7D32"
+                android:textColor="#FFFFFF"
+                android:padding="14dp"
+                android:layout_marginBottom="8dp"/>
+
+            <Button
+                android:id="@+id/stopButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Ferma"
+                android:textSize="16sp"
+                android:backgroundTint="#C62828"
+                android:textColor="#FFFFFF"
+                android:padding="14dp"
+                android:enabled="false"/>
+
         </LinearLayout>
 
-        <!-- Bottoni -->
-        <Button
-            android:id="@+id/startButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="▶  Avvia Posizioni Fake"
-            android:textSize="16sp"
-            android:backgroundTint="#2E7D32"
-            android:textColor="#FFFFFF"
-            android:padding="14dp"
-            android:layout_marginBottom="8dp"/>
+    </ScrollView>
 
-        <Button
-            android:id="@+id/stopButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="■  Ferma"
-            android:textSize="16sp"
-            android:backgroundTint="#C62828"
-            android:textColor="#FFFFFF"
-            android:padding="14dp"
-            android:enabled="false"/>
-
-        <!-- Status -->
-        <TextView
-            android:id="@+id/statusText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text=""
-            android:textSize="14sp"
-            android:textColor="#616161"
-            android:gravity="center"
-            android:padding="16dp"/>
-
-    </LinearLayout>
-</ScrollView>
+</LinearLayout>

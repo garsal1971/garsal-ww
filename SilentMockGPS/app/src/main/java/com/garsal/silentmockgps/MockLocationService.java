@@ -36,6 +36,7 @@ public class MockLocationService extends Service {
 
     private Handler handler;
     private Runnable cycleRunnable;
+    private long stopAt = 0;
 
     public static boolean isRunning() { return running; }
 
@@ -78,7 +79,7 @@ public class MockLocationService extends Service {
         startForeground(NOTIF_ID, buildNotification("Avvio ciclo GPS..."));
         running = true;
 
-        long stopAt = System.currentTimeMillis() + (long) totalMinutes * 60 * 1000;
+        stopAt = System.currentTimeMillis() + (long) totalMinutes * 60 * 1000;
         final int[] index = {0};
 
         cycleRunnable = new Runnable() {
@@ -166,6 +167,7 @@ public class MockLocationService extends Service {
         Intent i = new Intent(ACTION_STATUS);
         i.putExtra("message", message);
         i.putExtra("running", isRunning);
+        i.putExtra("stopAt", stopAt);
         sendBroadcast(i);
     }
 
