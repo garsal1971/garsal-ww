@@ -9,6 +9,9 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -36,7 +39,7 @@ public class MainActivity extends Activity {
     private static final String PREFS_COORDS = "coords";
 
     private EditText coordinatesInput, secondsInput, minutesInput;
-    private Button startButton, stopButton, addCoordsButton;
+    private Button startButton, stopButton, addCoordsButton, readGpsButton;
     private Button selectAllButton, deleteButton, mapsButton, addToInputButton;
     private TextView statusText, countdownText, emptyTableText;
     private LinearLayout coordTableLayout, statusBar;
@@ -61,6 +64,7 @@ public class MainActivity extends Activity {
         startButton      = findViewById(R.id.startButton);
         stopButton       = findViewById(R.id.stopButton);
         addCoordsButton  = findViewById(R.id.addCoordsButton);
+        readGpsButton    = findViewById(R.id.readGpsButton);
         selectAllButton  = findViewById(R.id.selectAllButton);
         deleteButton     = findViewById(R.id.deleteButton);
         mapsButton       = findViewById(R.id.mapsButton);
@@ -74,6 +78,7 @@ public class MainActivity extends Activity {
         startButton.setOnClickListener(v -> onStartClicked());
         stopButton.setOnClickListener(v -> onStopClicked());
         addCoordsButton.setOnClickListener(v -> onAddCoords());
+        readGpsButton.setOnClickListener(v -> onReadGps());
         selectAllButton.setOnClickListener(v -> onSelectAll());
         deleteButton.setOnClickListener(v -> onDelete());
         mapsButton.setOnClickListener(v -> onOpenMaps());
@@ -319,6 +324,7 @@ public class MainActivity extends Activity {
     private void setRunningState(boolean running) {
         startButton.setEnabled(!running);
         stopButton.setEnabled(running);
+        readGpsButton.setEnabled(!running);
         statusBar.setVisibility(running ? View.VISIBLE : View.GONE);
         if (!running) {
             countdownText.setText("");
@@ -352,6 +358,70 @@ public class MainActivity extends Activity {
             countdownHandler.removeCallbacks(countdownTick);
             countdownTick = null;
         }
+    }
+
+    // ---- GPS reale ----
+
+    private void onReadGps() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "Permesso posizione non concesso", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        LocationManager lm = (LocationManager) getSystemService(LOCATION_SERVICE);
+        // Usa l'ultima posizione nota se è recente (< 30 secondi)
+        Location last = null;
+        try { last = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER); } catch (Exception ignored) {}
+        if (last == null) {
+            try { last = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER); } catch (Exception ignored) {}
+        }
+        if (last != null && (System.currentTimeMillis() - last.getTime()) < 30_000) {
+            addGpsCoordToTable(last);
+            return;
+        }
+        // Richiedi fix fresco
+        Toast.makeText(this, "Acquisizione GPS in corso...", Toast.LENGTH_SHORT).show();
+        readGpsButton.setEnabled(false);
+        final LocationListener[] ref = new LocationListener[1];
+        final Runnable timeout = () -> {
+            lm.removeUpdates(ref[0]);
+            readGpsButton.setEnabled(!MockLocationService.isRunning());
+            Toast.makeText(this, "GPS: nessun segnale. Riprova all'aperto.", Toast.LENGTH_LONG).show();
+        };
+        ref[0] = new LocationListener() {
+            @Override
+            public void onLocationChanged(Location location) {
+                lm.removeUpdates(this);
+                countdownHandler.removeCallbacks(timeout);
+                addGpsCoordToTable(location);
+                readGpsButton.setEnabled(!MockLocationService.isRunning());
+            }
+            @Override public void onStatusChanged(String provider, int status, android.os.Bundle extras) {}
+            @Override public void onProviderEnabled(String provider) {}
+            @Override
+            public void onProviderDisabled(String provider) {
+                lm.removeUpdates(this);
+                countdownHandler.removeCallbacks(timeout);
+                readGpsButton.setEnabled(!MockLocationService.isRunning());
+                Toast.makeText(MainActivity.this, "GPS non attivo. Attivarlo nelle impostazioni.", Toast.LENGTH_LONG).show();
+            }
+        };
+        try {
+            lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, ref[0], Looper.getMainLooper());
+            countdownHandler.postDelayed(timeout, 15_000);
+        } catch (Exception e) {
+            readGpsButton.setEnabled(!MockLocationService.isRunning());
+            Toast.makeText(this, "GPS non disponibile", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void addGpsCoordToTable(Location loc) {
+        String coord = String.format(Locale.US, "%.6f, %.6f", loc.getLatitude(), loc.getLongitude());
+        coordList.add(coord);
+        saveCoords();
+        buildCoordTable();
+        Toast.makeText(this, "Aggiunto: " + coord, Toast.LENGTH_LONG).show();
     }
 
     // ---- Permessi ----
