@@ -143,10 +143,13 @@ public class MainActivity extends Activity {
 
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setPadding(dp(8), dp(3), dp(8), dp(3));
+        row.setPadding(dp(6), 0, dp(6), 0);
         row.setBackgroundColor(selected ? 0xFFE8F5E9 : 0xFFFFFFFF);
 
         CheckBox cb = new CheckBox(this);
+        cb.setMinHeight(0);
+        cb.setMinimumHeight(0);
+        cb.setPadding(0, dp(2), 0, dp(2));
         cb.setChecked(selected);
         final int idx = i;
         cb.setOnCheckedChangeListener((btn, checked) -> {
@@ -158,11 +161,12 @@ public class MainActivity extends Activity {
 
         TextView tv = new TextView(this);
         tv.setText(coord);
-        tv.setTextSize(12);
+        tv.setTextSize(11);
         tv.setTypeface(Typeface.MONOSPACE);
+        tv.setPadding(0, dp(2), 0, dp(2));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-        lp.setMargins(dp(8), 0, 0, 0);
+        lp.setMargins(dp(4), 0, 0, 0);
         tv.setLayoutParams(lp);
         tv.setOnClickListener(v -> cb.setChecked(!cb.isChecked()));
 
@@ -377,7 +381,7 @@ public class MainActivity extends Activity {
             try { last = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER); } catch (Exception ignored) {}
         }
         if (last != null && (System.currentTimeMillis() - last.getTime()) < 30_000) {
-            addGpsCoordToTable(last);
+            addGpsCoordToInput(last);
             return;
         }
         // Richiedi fix fresco
@@ -394,7 +398,7 @@ public class MainActivity extends Activity {
             public void onLocationChanged(Location location) {
                 lm.removeUpdates(this);
                 countdownHandler.removeCallbacks(timeout);
-                addGpsCoordToTable(location);
+                addGpsCoordToInput(location);
                 readGpsButton.setEnabled(!MockLocationService.isRunning());
             }
             @Override public void onStatusChanged(String provider, int status, android.os.Bundle extras) {}
@@ -416,12 +420,11 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void addGpsCoordToTable(Location loc) {
+    private void addGpsCoordToInput(Location loc) {
         String coord = String.format(Locale.US, "%.6f, %.6f", loc.getLatitude(), loc.getLongitude());
-        coordList.add(coord);
-        saveCoords();
-        buildCoordTable();
-        Toast.makeText(this, "Aggiunto: " + coord, Toast.LENGTH_LONG).show();
+        String current = coordinatesInput.getText().toString().trim();
+        coordinatesInput.setText(current.isEmpty() ? coord : current + "\n" + coord);
+        Toast.makeText(this, "Posizione inserita: " + coord, Toast.LENGTH_LONG).show();
     }
 
     // ---- Permessi ----
