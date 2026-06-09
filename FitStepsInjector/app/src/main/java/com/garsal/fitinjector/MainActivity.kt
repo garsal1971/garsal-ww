@@ -69,6 +69,12 @@ class MainActivity : AppCompatActivity() {
         statusText = findViewById(R.id.statusText)
         currentStepsText = findViewById(R.id.currentStepsText)
         accountText = findViewById(R.id.accountText)
+
+        // mostra subito account se già loggato
+        GoogleSignIn.getLastSignedInAccount(this)?.email?.let {
+            accountText.text = it
+        }
+        currentStepsText.text = "..."
         stepsInput = findViewById(R.id.stepsInput)
         injectButton = findViewById(R.id.injectButton)
         refreshButton = findViewById(R.id.refreshButton)
@@ -126,8 +132,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun executePendingAction(account: GoogleSignInAccount) {
-        val email = account.email ?: account.displayName ?: "Account sconosciuto"
-        accountText.text = "Account: $email"
+        val lastAccount = GoogleSignIn.getLastSignedInAccount(this)
+        val email = lastAccount?.email ?: lastAccount?.displayName ?: account.email ?: "—"
+        accountText.text = email
         when (pendingAction) {
             PendingAction.READ -> readCurrentSteps(account)
             PendingAction.INJECT -> injectSteps(account, pendingSteps)
