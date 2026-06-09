@@ -1,10 +1,12 @@
 package com.garsal.silentmockgps;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.widget.Button;
@@ -13,6 +15,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 public class MainActivity extends Activity {
+
+    private static final int REQ_LOCATION = 1;
 
     private EditText coordinatesInput, secondsInput, minutesInput;
     private Button startButton, stopButton;
@@ -46,6 +50,42 @@ public class MainActivity extends Activity {
                 setRunningState(running);
             }
         };
+
+        requestLocationPermissions();
+    }
+
+    private void requestLocationPermissions() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return;
+
+        boolean fineGranted = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+
+        if (!fineGranted) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                requestPermissions(new String[]{
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                        Manifest.permission.FOREGROUND_SERVICE_LOCATION
+                }, REQ_LOCATION);
+            } else {
+                requestPermissions(new String[]{
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                }, REQ_LOCATION);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == REQ_LOCATION) {
+            boolean granted = grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+            if (!granted) {
+                statusText.setText("Permesso posizione negato. L'app non funzionerà.");
+                startButton.setEnabled(false);
+            }
+        }
     }
 
     @Override
