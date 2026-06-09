@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.net.Uri;
@@ -22,6 +23,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -30,6 +32,8 @@ import java.util.Set;
 public class MainActivity extends Activity {
 
     private static final int REQ_LOCATION = 1;
+    private static final String PREFS_NAME = "silentmockgps";
+    private static final String PREFS_COORDS = "coords";
 
     private EditText coordinatesInput, secondsInput, minutesInput;
     private Button startButton, stopButton, addCoordsButton;
@@ -84,7 +88,6 @@ public class MainActivity extends Activity {
                 if (msg != null) statusText.setText(msg);
                 setRunningState(running);
                 if (running && serviceStopAt > 0) startCountdown();
-                // mostra barra anche in caso di errore per qualche secondo
                 if (!running && msg != null && msg.startsWith("Errore")) {
                     statusBar.setVisibility(View.VISIBLE);
                     statusBar.setBackgroundColor(0xFFB71C1C);
@@ -92,8 +95,30 @@ public class MainActivity extends Activity {
             }
         };
 
+        loadCoords();
         buildCoordTable();
         requestLocationPermissions();
+    }
+
+    // ---- Persistenza coordinate ----
+
+    private void saveCoords() {
+        StringBuilder sb = new StringBuilder();
+        for (String c : coordList) {
+            if (sb.length() > 0) sb.append("\n");
+            sb.append(c);
+        }
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                .edit().putString(PREFS_COORDS, sb.toString()).apply();
+    }
+
+    private void loadCoords() {
+        String saved = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                .getString(PREFS_COORDS, "");
+        coordList.clear();
+        if (!saved.isEmpty()) {
+            coordList.addAll(Arrays.asList(saved.split("\n")));
+        }
     }
 
     // ---- Tabella coordinate ----
@@ -168,6 +193,7 @@ public class MainActivity extends Activity {
         }
         if (added > 0) {
             coordinatesInput.setText("");
+            saveCoords();
             buildCoordTable();
             Toast.makeText(this, added + " coordinate aggiunte", Toast.LENGTH_SHORT).show();
         } else {
@@ -192,6 +218,7 @@ public class MainActivity extends Activity {
         coordList.clear();
         coordList.addAll(newList);
         selectedSet.clear();
+        saveCoords();
         buildCoordTable();
     }
 
