@@ -35,19 +35,15 @@ jobs:
           echo "Keystore ripristinato"
           echo "SHA-1 fisso: 9E:0D:F1:6D:F2:FF:DE:A5:1B:43:26:E4:B8:30:B1:8F:15:53:D9:C1"
 
-      - name: Build FitStepsInjector debug APK
+      - name: Build FitStepsInjector release APK
         working-directory: FitStepsInjector
-        env:
-          KEYSTORE_PATH: ${{ github.workspace }}/../../../home/runner/.android/fitinjector.jks
-        run: ./gradlew :app:assembleDebug --no-daemon
+        run: ./gradlew :app:assembleRelease --no-daemon
 
-      - name: Sign APK with fixed keystore
+      - name: Sign APK with upload keystore
         run: |
-          APK=FitStepsInjector/app/build/outputs/apk/debug/app-debug.apk
-          SIGNED_APK=FitStepsInjector/app/build/outputs/apk/debug/app-debug-signed.apk
-          # align
+          APK=FitStepsInjector/app/build/outputs/apk/release/app-release-unsigned.apk
+          SIGNED_APK=FitStepsInjector/app/build/outputs/apk/release/app-release-signed.apk
           ${ANDROID_HOME}/build-tools/$(ls ${ANDROID_HOME}/build-tools/ | tail -1)/zipalign -v 4 $APK /tmp/aligned.apk
-          # sign with fixed keystore
           ${ANDROID_HOME}/build-tools/$(ls ${ANDROID_HOME}/build-tools/ | tail -1)/apksigner sign \
             --ks ~/.android/fitinjector.jks \
             --ks-key-alias fitinjector \
@@ -55,11 +51,11 @@ jobs:
             --key-pass pass:fitinjector123 \
             --out $SIGNED_APK \
             /tmp/aligned.apk
-          echo "APK firmato con SHA-1: 9E:0D:F1:6D:F2:FF:DE:A5:1B:43:26:E4:B8:30:B1:8F:15:53:D9:C1"
+          echo "APK release firmato e pronto per Play Store"
 
-      - name: Upload signed APK as artifact
+      - name: Upload release APK as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FitStepsInjector-signed-${{ github.run_number }}
-          path: FitStepsInjector/app/build/outputs/apk/debug/app-debug-signed.apk
+          name: FitStepsInjector-release-${{ github.run_number }}
+          path: FitStepsInjector/app/build/outputs/apk/release/app-release-signed.apk
           retention-days: 30
