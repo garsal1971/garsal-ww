@@ -96,10 +96,10 @@ class MainActivity : AppCompatActivity() {
         btnReadSteps.setOnClickListener { readTodaySteps() }
         btnInjectSteps.setOnClickListener { injectStepsFromUI() }
 
-        findViewById<Button>(R.id.btn5k).setOnClickListener { etStepCount.setText("5000") }
-        findViewById<Button>(R.id.btn10k).setOnClickListener { etStepCount.setText("10000") }
-        findViewById<Button>(R.id.btn15k).setOnClickListener { etStepCount.setText("15000") }
-        findViewById<Button>(R.id.btn21k).setOnClickListener { etStepCount.setText("21000") }
+        findViewById<Button>(R.id.btn5k).setOnClickListener { addToStepCount(100) }
+        findViewById<Button>(R.id.btn10k).setOnClickListener { addToStepCount(1000) }
+        findViewById<Button>(R.id.btn15k).setOnClickListener { addToStepCount(5000) }
+        findViewById<Button>(R.id.btn21k).setOnClickListener { addToStepCount(10000) }
     }
 
     private fun checkAdbModeOrRefreshUI() {
@@ -150,18 +150,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshAccountUI() {
-        val account = GoogleSignIn.getLastSignedInAccount(this)
         val fitAccount = GoogleSignIn.getAccountForExtension(this, fitnessOptions)
         val authorized = GoogleSignIn.hasPermissions(fitAccount, fitnessOptions)
 
-        if (account != null && authorized) {
-            tvAccountName.text = account.displayName ?: "Account Google"
-            tvAccountEmail.text = account.email ?: ""
+        if (authorized) {
+            tvAccountName.text = fitAccount.displayName ?: fitAccount.email ?: "Account Google"
+            tvAccountEmail.text = fitAccount.email ?: ""
             btnSignIn.isEnabled = false
             btnSignOut.isEnabled = true
             btnReadSteps.isEnabled = true
             btnInjectSteps.isEnabled = true
-            appendLog("Account: ${account.email}")
+            appendLog("Account: ${fitAccount.email}")
+            readTodaySteps()
         } else {
             tvAccountName.text = "Non connesso"
             tvAccountEmail.text = "Premi Connetti per autorizzare Google Fit"
@@ -170,6 +170,11 @@ class MainActivity : AppCompatActivity() {
             btnReadSteps.isEnabled = false
             btnInjectSteps.isEnabled = false
         }
+    }
+
+    private fun addToStepCount(amount: Int) {
+        val current = etStepCount.text?.toString()?.trim()?.toIntOrNull() ?: 0
+        etStepCount.setText((current + amount).toString())
     }
 
     private fun startSignIn() {
@@ -197,6 +202,7 @@ class MainActivity : AppCompatActivity() {
                         ?.getValue(Field.FIELD_STEPS)?.asInt() ?: 0
                 } else 0
                 tvCurrentSteps.text = steps.toString()
+                etStepCount.setText(steps.toString())
                 appendLog("Passi oggi: $steps")
             }
             .addOnFailureListener { e ->

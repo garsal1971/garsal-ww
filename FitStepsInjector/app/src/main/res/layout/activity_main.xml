@@ -212,7 +212,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
-                        android:text="5k"/>
+                        android:text="+100"/>
 
                     <Button
                         android:id="@+id/btn10k"
@@ -222,7 +222,7 @@
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
                         android:layout_marginStart="4dp"
-                        android:text="10k"/>
+                        android:text="+1k"/>
 
                     <Button
                         android:id="@+id/btn15k"
@@ -232,7 +232,7 @@
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
                         android:layout_marginStart="4dp"
-                        android:text="15k"/>
+                        android:text="+5k"/>
 
                     <Button
                         android:id="@+id/btn21k"
@@ -241,7 +241,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="4dp"
-                        android:text="21k"/>
+                        android:text="+10k"/>
                 </LinearLayout>
 
                 <Button
