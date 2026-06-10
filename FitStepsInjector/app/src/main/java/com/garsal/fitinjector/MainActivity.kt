@@ -245,6 +245,19 @@ class MainActivity : AppCompatActivity() {
             } else {
                 val msg = "Sign-in fallito o annullato (resultCode=$resultCode)"
                 appendLog("ERROR: $msg")
+                // Estrai errore dettagliato da Google
+                if (data != null) {
+                    try {
+                        GoogleSignIn.getSignedInAccountFromIntent(data)
+                            .addOnFailureListener { e ->
+                                appendLog("Dettaglio errore: ${e.javaClass.simpleName}: ${e.message}")
+                            }
+                    } catch (e: Exception) {
+                        appendLog("Parsing errore: ${e.message}")
+                    }
+                } else {
+                    appendLog("Nessun dato aggiuntivo dall'intent (data=null)")
+                }
                 if (adbMode) {
                     writeResult("ERROR:$msg")
                     finish()
