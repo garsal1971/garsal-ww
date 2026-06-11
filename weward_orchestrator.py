@@ -8,6 +8,7 @@ import os
 import sys
 import random
 import requests
+from weward_silent_mock_position import SilentMockPosition
 
 # ─────────────────────────────────────────
 # CONFIGURAZIONE
@@ -17,6 +18,7 @@ SIKULIX_JAR     = r"C:\Oculix\sikulixide-2.0.5-windows.jar"
 SIKULIX_SCRIPT  = r"C:\sviluppo\git\AutoWeWard\weward_open.sikuli"
 ADB             = os.path.join(LDPLAYER_PATH, "adb.exe")
 FRIDA_JS        = r"C:\sviluppo\git\AutoWeWard\weward_capture_token.js"
+MOCK_LOCATION_JS= os.path.join(os.path.dirname(__file__), "weward_mock_location.js")
 FRIDA_SERVER    = "/data/local/tmp/frida-server"
 TOKEN_FILE_DEV  = "/data/local/tmp/weward_token.txt"
 TOKEN_FILE_LOCAL= r"C:\sviluppo\git\AutoWeWard\weward_token.txt"
@@ -237,12 +239,21 @@ if __name__ == "__main__":
         log("ERRORE: impossibile ottenere PID WeWard.")
         sys.exit(1)
 
-    # 6. Avvia Frida JS agganciato al PID aggiornato
+    # 6. Avvia mock posizione GPS PRIMA del token capture.
+    #    Il mock inietta la posizione fasulla a tutti i listener (LocationManager
+    #    e FusedLocationProviderClient) ogni 3 s, eliminando il drift tra
+    #    posizione reale e fasulla.
+    mock_pos = SilentMockPosition(pid=pid, frida_js=MOCK_LOCATION_JS)
+    if not mock_pos.start():
+        log("AVVISO: mock posizione non avviato. Continuo senza.")
+    time.sleep(2)
+
+    # 7. Avvia Frida JS agganciato al PID aggiornato
     token_holder = {"token": None}
     frida_proc, token_event = launch_frida_js(pid, token_holder)
     time.sleep(2)
 
-    # 7. Attendi token tramite evento
+    # 8. Attendi token tramite evento
     log("Attendo token...")
     token_event.wait(timeout=60)
 
@@ -254,15 +265,22 @@ if __name__ == "__main__":
 
     log(f"Token: {token[:30]}...")
 
-    # 8. Termina Frida (già terminato dal thread, ma per sicurezza)
+    # 9. Termina Frida token capture (già terminato dal thread, ma per sicurezza)
     try:
         frida_proc.terminate()
     except:
         pass
     time.sleep(1)
 
-    # 9. Invia passi
+    # 10. Invia passi
     success = send_steps(token, STEPS, real_headers=token_holder.get("headers"))
+
+    # 11. Ferma il mock posizione (sessione completata)
+    try:
+        mock_pos.stop()
+    except Exception:
+        pass
+
     if success:
         log(f"=== Completato! {STEPS} passi inviati con successo ===")
     else:
