@@ -8,7 +8,6 @@ import os
 import sys
 import random
 import requests
-from weward_silent_mock_position import SilentMockPosition
 
 # ─────────────────────────────────────────
 # CONFIGURAZIONE
@@ -18,12 +17,12 @@ SIKULIX_JAR     = r"C:\Oculix\sikulixide-2.0.5-windows.jar"
 SIKULIX_SCRIPT  = r"C:\sviluppo\git\AutoWeWard\weward_open.sikuli"
 ADB             = os.path.join(LDPLAYER_PATH, "adb.exe")
 FRIDA_JS        = r"C:\sviluppo\git\AutoWeWard\weward_capture_token.js"
-MOCK_LOCATION_JS= os.path.join(os.path.dirname(__file__), "weward_mock_location.js")
 FRIDA_SERVER    = "/data/local/tmp/frida-server"
 TOKEN_FILE_DEV  = "/data/local/tmp/weward_token.txt"
 TOKEN_FILE_LOCAL= r"C:\sviluppo\git\AutoWeWard\weward_token.txt"
 ADB_DEVICE      = "127.0.0.1:5555"
 PACKAGE         = "com.weward"
+FITINJECTOR_PKG = "com.garsal.fitinjector"
 
 STEPS           = random.randint(20500, 22000)
 
@@ -228,25 +227,22 @@ if __name__ == "__main__":
     if os.path.exists(TOKEN_FILE_LOCAL):
         os.remove(TOKEN_FILE_LOCAL)
 
-    # 4. Avvia WeWard via ADB
+    # 4. Avvia mock posizione GPS (FitStepsInjector come MockLocationApp)
+    log("Avvio mock posizione GPS...")
+    adb(f'shell am startservice -n {FITINJECTOR_PKG}/.MockLocationService')
+    time.sleep(2)
+
+    # 5. Avvia WeWard via ADB
     log("Apertura WeWard via ADB...")
     adb(f"shell monkey -p {PACKAGE} -c android.intent.category.LAUNCHER 1")
     time.sleep(5)  # attendi caricamento app
 
-    # 5. Ottieni PID WeWard dopo avvio
+    # 6. Ottieni PID WeWard dopo avvio
     pid = get_pid()
     if not pid:
         log("ERRORE: impossibile ottenere PID WeWard.")
+        adb(f'shell am stopservice -n {FITINJECTOR_PKG}/.MockLocationService')
         sys.exit(1)
-
-    # 6. Avvia mock posizione GPS PRIMA del token capture.
-    #    Il mock inietta la posizione fasulla a tutti i listener (LocationManager
-    #    e FusedLocationProviderClient) ogni 3 s, eliminando il drift tra
-    #    posizione reale e fasulla.
-    mock_pos = SilentMockPosition(pid=pid, frida_js=MOCK_LOCATION_JS)
-    if not mock_pos.start():
-        log("AVVISO: mock posizione non avviato. Continuo senza.")
-    time.sleep(2)
 
     # 7. Avvia Frida JS agganciato al PID aggiornato
     token_holder = {"token": None}
@@ -261,11 +257,12 @@ if __name__ == "__main__":
     if not token:
         log("ERRORE: Token non ricevuto entro il timeout.")
         frida_proc.terminate()
+        adb(f'shell am stopservice -n {FITINJECTOR_PKG}/.MockLocationService')
         sys.exit(1)
 
     log(f"Token: {token[:30]}...")
 
-    # 9. Termina Frida token capture (già terminato dal thread, ma per sicurezza)
+    # 9. Termina Frida (già terminato dal thread, ma per sicurezza)
     try:
         frida_proc.terminate()
     except:
@@ -275,11 +272,8 @@ if __name__ == "__main__":
     # 10. Invia passi
     success = send_steps(token, STEPS, real_headers=token_holder.get("headers"))
 
-    # 11. Ferma il mock posizione (sessione completata)
-    try:
-        mock_pos.stop()
-    except Exception:
-        pass
+    # 11. Ferma mock posizione
+    adb(f'shell am stopservice -n {FITINJECTOR_PKG}/.MockLocationService')
 
     if success:
         log(f"=== Completato! {STEPS} passi inviati con successo ===")

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.garsal.fitinjector">
 
     <!-- Storage permissions for reading /sdcard/steps_input.txt and writing /sdcard/steps_result.txt -->
@@ -11,6 +12,15 @@
 
     <!-- Google Fit permissions -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+
+    <!-- Mock location permissions -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- ACCESS_MOCK_LOCATION è necessario solo su API < 23; su Android 6+
+         basta impostare l'app come "App per posizione fittizia" nelle
+         Opzioni Sviluppatore. -->
+    <uses-permission android:name="android.permission.ACCESS_MOCK_LOCATION"
+        tools:ignore="MockLocation" />
 
     <application
         android:allowBackup="true"
@@ -29,6 +39,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- MockLocationService: avviabile via ADB, gira come foreground service -->
+        <service
+            android:name=".MockLocationService"
+            android:exported="true"
+            android:foregroundServiceType="location" />
 
     </application>
 
