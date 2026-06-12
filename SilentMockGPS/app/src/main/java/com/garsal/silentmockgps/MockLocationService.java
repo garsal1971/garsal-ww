@@ -34,7 +34,7 @@ public class MockLocationService extends Service {
 
     // Intervallo di refresh della posizione fasulla.
     // Senza questo, tra un ciclo e l'altro (anche 30 s) Android torna al GPS reale.
-    private static final long REFRESH_MS = 1500L;
+    private static final long REFRESH_MS = 1000L;
 
     private static volatile boolean running = false;
 
