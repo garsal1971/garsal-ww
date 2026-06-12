@@ -504,6 +504,12 @@ def posizionati_su_menuutenza_ingranaggio():
 # LOGOUT
 # ================================================================
 def esci():
+    # il pulsante Esci sta in FONDO alla pagina impostazioni:
+    # bisogna scorrere prima di poterlo vedere e cliccare
+    print("  [logout 1/4] scorro fino in fondo alle impostazioni...")
+    scroll_giu(volte=26)
+    wait(0.5)
+
     print("  [logout 1/4] cerco pulsante Esci...")
     sposta_mouse_neutro()
     if not cerca_con_tentativi("1775218288286-3.png", 5, 0.5):
@@ -512,7 +518,6 @@ def esci():
     click(getLastMatch())
     print("  [logout 1/4] pulsante Esci cliccato OK")
     wait(0.5)
-    scroll_giu(volte=26)
 
     print("  [logout 2/4] prima conferma logout...")
     if not cerca_con_tentativi("1775217958402-3.png", 5, 0.5):
