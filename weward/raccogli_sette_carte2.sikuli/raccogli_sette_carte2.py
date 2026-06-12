@@ -385,8 +385,20 @@ def apri_weward(max_tentativi=2, attesa=0.5):
         return False
 
     print(">>> [apri_weward] app aperta OK")
-    wait(4)
+    attendi_barra_nav()
     return True
+
+def attendi_barra_nav(timeout=20):
+    # la barra di navigazione in basso (Attivita/Riscatta/Social/WeCards/Promo)
+    # compare quando la home ha finito di caricare: e' il segnale di
+    # "schermata pronta" da attendere PRIMA di qualsiasi altra azione
+    print(">>> [home] attendo la barra di navigazione (home pronta)...")
+    if exists(Pattern("1775217437436-3.png").similar(0.80), timeout):
+        print(">>> [home] barra di navigazione comparsa, home pronta OK")
+        wait(0.5)
+        return True
+    print(">>> [home] ATTENZIONE: barra non rilevata entro {0}s, proseguo".format(timeout))
+    return False
 
 def chiudi_weward():
     print(">>> [chiudi_weward] chiusura WeWard via adb...")
