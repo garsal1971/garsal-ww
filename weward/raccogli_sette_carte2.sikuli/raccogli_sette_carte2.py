@@ -1,0 +1,402 @@
+# -*- coding: utf-8 -*-
+import time
+import sys
+import math
+import subprocess
+import os
+
+sys.path.append(getBundlePath())
+from sikuli import *
+import java.awt.Robot as Robot
+import java.awt.event.InputEvent as InputEvent
+
+# ================================================================
+# CONFIGURAZIONE GENERALE
+# ================================================================
+STOP_FILE  = r"C:\Users\garsa\Desktop\stop.txt"
+LDCONSOLE  = r"C:\LDPlayer\LDPlayer9\dnconsole.exe"
+INDEX_FILE = r"C:\Archivio\sikulix-automation\gps_index.txt"
+ADB        = r"C:\LDPlayer\LDPlayer9\adb.exe"
+ADB_PORT   = "127.0.0.1:5555"
+
+_robot = Robot()
+TARGET = (14, 129, 115)
+
+# ================================================================
+# STOP
+# ================================================================
+
+# ================================================================
+# CONFIGURAZIONE GPS FAKE
+# ================================================================
+POSITIONS = [
+    (44.50717, 11.36210),
+    (44.50788, 11.35419),
+    (44.50682, 11.35790),
+    (44.50390, 11.36318),
+    (44.50396, 11.36761),
+    (44.51026, 11.35965),
+    (44.50462, 11.35990),
+    (44.51039, 11.35599),
+]
+
+def get_current_index():
+    if os.path.exists(INDEX_FILE):
+        with open(INDEX_FILE, "r") as f:
+            return int(f.read().strip())
+    return 0
+
+def save_index(index):
+    with open(INDEX_FILE, "w") as f:
+        f.write(str(index))
+
+def adb_connect():
+    subprocess.call(
+        [ADB, "connect", ADB_PORT],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+
+def avvia_silentmock():
+    adb_connect()
+    result = subprocess.Popen(
+        [ADB, "-s", ADB_PORT, "shell",
+         "am start -n com.garsal.silentmockgps/.MainActivity"],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    result.communicate()
+    wait(2)
+    print(">>> [SilentMockGPS] servizio avviato")
+
+def set_next_position(idx=None):
+    adb_connect()
+
+    if idx is None:
+        idx = get_current_index()
+    else:
+        idx = idx % len(POSITIONS)
+
+    lat, lon = POSITIONS[idx]
+
+    cmd = (
+        "am broadcast -a com.garsal.silentmockgps.SET_LOCATION "
+        "--es lat \"{0}\" --es lon \"{1}\""
+    ).format(lat, lon)
+
+    result = subprocess.Popen(
+        [ADB, "-s", ADB_PORT, "shell", cmd],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    out, err = result.communicate()
+    output = str(out).strip()
+
+    # se result=0 il servizio si e' fermato — riavvia e riprova
+    if "result=0" in output or "result=" not in output:
+        print(">>> [GPS] servizio fermo, riavvio...")
+        avvia_silentmock()
+        result = subprocess.Popen(
+            [ADB, "-s", ADB_PORT, "shell", cmd],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        out, err = result.communicate()
+        output = str(out).strip()
+
+    print(">>> [GPS] posizione {0}/{1}: ({2}, {3}) -> {4}".format(
+        idx + 1, len(POSITIONS), lat, lon, output))
+
+    save_index((idx + 1) % len(POSITIONS))
+
+# ================================================================
+# CONFIGURAZIONE ACCOUNT
+# ================================================================
+ACCOUNT_CONFIG = {
+    'garsal1971': {
+        'google': "1776969044180.png"
+    }
+,
+    'adagarofalobognanni': {
+        'google': "1776969054823.png"
+    },
+    'berros1974': {
+        'google': "1776969065567.png"
+    },
+    'gmx.salgar71': {
+        'google': "1776969075679.png"
+    },
+    'berros7426': {
+        'google': "1776969088481.png"
+    }
+}
+
+# ================================================================
+# UTILITY GENERALI
+# ================================================================
+def cerca_con_tentativi(immagine, max_tentativi=5, attesa=0.5):
+    for t in range(1, max_tentativi + 1):
+        if exists(immagine):
+            return True
+        print("    tentativo {0}/{1} fallito per [{2}], attendo {3}s...".format(
+              t, max_tentativi, immagine, attesa))
+        wait(attesa)
+    print("  ERRORE: [{0}] non trovata dopo {1} tentativi.".format(immagine, max_tentativi))
+    return False
+
+def distanza(x1, y1, x2, y2):
+    return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+
+# ================================================================
+# APERTURA APP
+# ================================================================
+def apri_weward(max_tentativi=2, attesa=0.5):
+    print(">>> [apri_weward] cerco icona app...")
+    if not cerca_con_tentativi("1775145501224-3.png", max_tentativi, attesa):
+        print(">>> [apri_weward] ERRORE: icona app non trovata, uscita.")
+        return False
+    click(getLastMatch())
+    print(">>> [apri_weward] app aperta OK")
+    wait(4)
+    return True
+
+# ================================================================
+# LOGIN ACCOUNT
+# ================================================================
+def apri_account(account='', max_tentativi=5, attesa=0.5):
+    print("\n>>> [apri_account] avvio login per: {0}".format(account))
+
+    if account not in ACCOUNT_CONFIG:
+        print(">>> [apri_account] ERRORE: account {0} non presente in ACCOUNT_CONFIG.".format(account))
+        return False
+
+    cfg = ACCOUNT_CONFIG[account]
+
+    print("  [1/5] apertura menu account...")
+    if not cerca_con_tentativi("1776968842981.png", max_tentativi, attesa):
+        print("  [1/5] ERRORE: menu account non trovato.")
+        return False
+    click(getLastMatch())
+    print("  [1/5] menu account aperto OK")
+    wait(attesa)
+
+    print("  [2/5] selezione account {0} tramite bentornato...".format(account))
+    hover(Location(185, 272))
+    wait(0.5)
+    click(Location(185, 272))
+    print("  [2/5] account selezionato OK")
+    wait(attesa)
+    print("  [3/5] avvio login Google...")
+    click(Location(185, 172))
+    if not cerca_con_tentativi(cfg['google'], max_tentativi, attesa):
+        print("  [3/5] ERRORE: pulsante Google non trovato.")
+        return False
+    click(getLastMatch())
+    print("  [3/5] login Google avviato, attendo caricamento pagina...")
+    wait(attesa)
+
+    print("  [4/5] conferma login...")
+    if not cerca_con_tentativi("1776969639793.png", max_tentativi, attesa):
+        print("  [4/5] ERRORE: pulsante conferma non trovato.")
+        return False
+    click(getLastMatch())
+    print("  [4/5] login confermato OK")
+    wait(attesa)
+
+    print(">>> [apri_account] login {0} completato OK".format(account))
+    return True
+
+# ================================================================
+# NAVIGAZIONE SEZIONI
+# ================================================================
+def posizionati_su_carte():
+    print("  [nav] apertura sezione Carte...")
+    wait(5)
+    if not cerca_con_tentativi("1775294025267-3.png", 5, 0.5):
+        print("  [nav] ERRORE: icona sezione Carte non trovata.")
+        return False
+    click(getLastMatch())
+    print("  [nav] sezione Carte aperta OK")
+    wait(0.5)
+    return True
+
+def posizionati_su_attivita():
+    print("  [nav] apertura sezione Attivita...")
+    if not cerca_con_tentativi("1775217437436-3.png", 5, 0.5):
+        print("  [nav] ERRORE: icona sezione Attivita non trovata.")
+        return False
+    click(getLastMatch())
+    print("  [nav] sezione Attivita aperta OK")
+    wait(0.5)
+    return True
+
+def posizionati_su_menuutenza():
+    print("  [nav] apertura menu utente...")
+    if not cerca_con_tentativi("1775217620164-3.png", 5, 0.5):
+        print("  [nav] ERRORE: icona menu utente non trovata.")
+        return False
+    click(getLastMatch())
+    print("  [nav] menu utente aperto OK")
+    wait(0.5)
+    return True
+
+def posizionati_su_menuutenza_ingranaggio():
+    print("  [nav] apertura impostazioni ingranaggio...")
+    if not cerca_con_tentativi("1775217843520-3.png", 5, 0.5):
+        print("  [nav] ERRORE: icona ingranaggio non trovata.")
+        return False
+    click(getLastMatch())
+    print("  [nav] impostazioni aperte OK")
+    wait(0.5)
+    return True
+
+# ================================================================
+# LOGOUT
+# ================================================================
+def esci():
+    print("  [logout 1/4] cerco pulsante Esci...")
+    if not cerca_con_tentativi("1775218288286-3.png", 5, 0.5):
+        print("  [logout 1/4] ERRORE: pulsante Esci non trovato.")
+        return False
+    click(getLastMatch())
+    print("  [logout 1/4] pulsante Esci cliccato OK")
+    wait(0.5)
+    wheel(WHEEL_DOWN, 35)
+
+    print("  [logout 2/4] prima conferma logout...")
+    if not cerca_con_tentativi("1775217958402-3.png", 5, 0.5):
+        print("  [logout 2/4] ERRORE: prima conferma non trovata.")
+        return False
+    click(getLastMatch())
+    print("  [logout 2/4] prima conferma OK")
+    wait(0.5)
+
+    print("  [logout 3/4] seconda conferma logout...")
+    if not cerca_con_tentativi("1775218411391-3.png", 5, 0.5):
+        print("  [logout 3/4] ERRORE: seconda conferma non trovata.")
+        return False
+    click(getLastMatch())
+    print("  [logout 3/4] logout completato OK")
+    wait(0.5)
+
+    print("  [logout 4/4] chiudi app...")
+    if not cerca_con_tentativi("1775296520334-3.png", 5, 0.5):
+        print("  [logout 4/4] ERRORE: chiudi app non trovato.")
+        return False
+    click(getLastMatch())
+    print("  [logout 4/4] app chiusa OK")
+    wait(0.5)
+
+    return True
+
+def esci_weward():
+    print(">>> [esci_weward] avvio sequenza logout...")
+    posizionati_su_attivita()
+    posizionati_su_menuutenza()
+    posizionati_su_menuutenza_ingranaggio()
+    esci()
+    print(">>> [esci_weward] logout completato OK")
+
+# ================================================================
+# RACCOLTA CARTE
+# ================================================================
+def raccogli_carte(max_tentativi=10, attesa=4):
+    print("==> Cerco puntoblu...")
+    doubleClick("1776970355761.png")
+    wait(1)
+    doubleClick("1776970355761.png")
+    wait(1)
+    doubleClick("1776970355761.png")
+    wait(1)
+
+    tentativo = 0
+    prese = 0
+    while prese < 7 and tentativo < max_tentativi:
+        check_stop()
+        print("--- Tentativo %d di %d ---" % (tentativo, max_tentativi))
+
+        set_next_position()
+        wait(4)
+
+        carta = exists("1776442897675-3.png")
+        if carta:
+            print("esiste carta, clicco...")
+            try:
+                click(carta)
+                if exists("1776443662760-3.png"):
+                    print("esiste carta da aprire")
+                    click("1776443662760-3.png")
+                    if exists("1776443756642-3.png"):
+                        print("esiste chiudo carta presa")
+                        click("1776443756642-3.png")
+                        prese = prese + 1
+            except FindFailed:
+                print("  carta sparita dopo GPS update, riprovo")
+
+        tentativo = tentativo + 1
+
+    print("prese " + str(prese) + " - tentativo " + str(tentativo))
+    return
+
+# ================================================================
+# CONTROLLO CARTE
+# ================================================================
+def controlla_carte():
+    flagexit = True
+
+    if not cerca_con_tentativi("1777034619146.png", 2, 0.5):
+        print("  [controlla_carte] lista carte non trovata.")
+        return False
+    click(getLastMatch())
+    wait(0.5)
+
+    print("  [controlla_carte] verifico carte disponibili...")
+    if cerca_con_tentativi("1775384584244-3.png", 2, 0.5):
+        print("  [controlla_carte] nessuna carta disponibile.")
+        return False
+        wait(0.5)
+
+    print("  [controlla_carte] torno indietro...")
+    if cerca_con_tentativi("1777127421332.png", 5, 0.5):
+        click(getLastMatch())
+        print("  [controlla_carte] indietro OK")
+
+    print("  [controlla_carte] carte da raccogliere: {0}".format(str(flagexit)))
+    return True
+# ================================================================
+# ESECUZIONE TUTTI GLI ACCOUNT
+# ================================================================
+def esegui_tutti(max_tentativi=5, attesa=0.5):
+    print("\n==============================")
+    print("AVVIO CICLO SU TUTTI GLI ACCOUNT")
+    print("==============================")
+    risultati = {}
+    for account in ACCOUNT_CONFIG:
+        wait(1.5)
+        if not apri_weward(max_tentativi, attesa):
+            print("ERRORE: impossibile aprire WeWard, script interrotto.")
+            continue 
+        print("\n------------------------------")
+        ok = apri_account(account, max_tentativi, attesa)
+        risultati[account] = 'OK' if ok else 'FAIL'
+        if ok:
+            posizionati_su_carte()
+            if controlla_carte():
+                raccogli_carte(max_tentativi=21)
+            else:
+                print("  nessuna carta da raccogliere, passo al prossimo account.")
+            esci_weward()
+        else:
+            print("  account {0} saltato per errore login.".format(account))
+
+    print("\n==============================")
+    print("RIEPILOGO FINALE")
+    print("==============================")
+    for acc, esito in risultati.items():
+        print("  {0}  {1}".format(esito, acc))
+    return
+
+# ================================================================
+# AVVIO SCRIPT
+# ================================================================
+#set_next_position(4)
+adb_connect()
+avvia_silentmock()
+esegui_tutti(max_tentativi=15, attesa=0.5)
+# raccogli_carte(max_tentativi=15)
