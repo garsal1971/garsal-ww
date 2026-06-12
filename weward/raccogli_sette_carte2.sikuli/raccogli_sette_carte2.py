@@ -18,6 +18,7 @@ LDCONSOLE  = r"C:\LDPlayer\LDPlayer9\dnconsole.exe"
 INDEX_FILE = r"C:\Archivio\sikulix-automation\gps_index.txt"
 ADB        = r"C:\LDPlayer\LDPlayer9\adb.exe"
 ADB_PORT   = "127.0.0.1:5555"
+WEWARD_PKG = "com.weward"
 
 _robot = Robot()
 TARGET = (14, 129, 115)
@@ -25,6 +26,11 @@ TARGET = (14, 129, 115)
 # ================================================================
 # STOP
 # ================================================================
+def check_stop():
+    if os.path.exists(STOP_FILE):
+        print(">>> [STOP] file stop.txt trovato, interruzione script.")
+        sys.exit(0)
+    return False
 
 # ================================================================
 # CONFIGURAZIONE GPS FAKE
@@ -147,14 +153,32 @@ def distanza(x1, y1, x2, y2):
 # APERTURA APP
 # ================================================================
 def apri_weward(max_tentativi=2, attesa=0.5):
-    print(">>> [apri_weward] cerco icona app...")
-    if not cerca_con_tentativi("1775145501224-3.png", max_tentativi, attesa):
-        print(">>> [apri_weward] ERRORE: icona app non trovata, uscita.")
+    print(">>> [apri_weward] avvio WeWard via adb...")
+    adb_connect()
+    result = subprocess.Popen(
+        [ADB, "-s", ADB_PORT, "shell",
+         "monkey -p {0} -c android.intent.category.LAUNCHER 1".format(WEWARD_PKG)],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    out, err = result.communicate()
+    output = str(out).strip()
+
+    if "monkey aborted" in output or "No activities found" in output:
+        print(">>> [apri_weward] ERRORE: avvio fallito -> " + output)
         return False
-    click(getLastMatch())
+
     print(">>> [apri_weward] app aperta OK")
     wait(4)
     return True
+
+def chiudi_weward():
+    print(">>> [chiudi_weward] chiusura WeWard via adb...")
+    result = subprocess.Popen(
+        [ADB, "-s", ADB_PORT, "shell", "am force-stop " + WEWARD_PKG],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    result.communicate()
+    print(">>> [chiudi_weward] app chiusa OK")
 
 # ================================================================
 # LOGIN ACCOUNT
