@@ -19,6 +19,7 @@ INDEX_FILE = r"C:\Archivio\sikulix-automation\gps_index.txt"
 ADB        = r"C:\LDPlayer\LDPlayer9\adb.exe"
 ADB_PORT   = "127.0.0.1:5555"
 WEWARD_PKG = "com.weward"
+LD_INDEX   = 0   # indice istanza LDPlayer (0 = prima istanza, porta 5555)
 
 _robot = Robot()
 TARGET = (14, 129, 115)
@@ -61,6 +62,53 @@ def adb_connect():
         [ADB, "connect", ADB_PORT],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
+
+# ================================================================
+# LDPLAYER
+# ================================================================
+def ldplayer_in_esecuzione():
+    result = subprocess.Popen(
+        [LDCONSOLE, "isrunning", "--index", str(LD_INDEX)],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    out, err = result.communicate()
+    return "running" in str(out)
+
+def avvia_ldplayer(timeout=120):
+    if ldplayer_in_esecuzione():
+        print(">>> [LDPlayer] istanza {0} gia' in esecuzione".format(LD_INDEX))
+        return True
+
+    print(">>> [LDPlayer] avvio istanza {0}...".format(LD_INDEX))
+    subprocess.Popen(
+        [LDCONSOLE, "launch", "--index", str(LD_INDEX)],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+
+    inizio = time.time()
+    while time.time() - inizio < timeout:
+        check_stop()
+        adb_connect()
+        result = subprocess.Popen(
+            [ADB, "-s", ADB_PORT, "shell", "getprop sys.boot_completed"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        out, err = result.communicate()
+        if "1" in str(out):
+            print(">>> [LDPlayer] boot completato in {0}s".format(int(time.time() - inizio)))
+            wait(5)   # margine per il caricamento della home
+            return True
+        wait(3)
+
+    print(">>> [LDPlayer] ERRORE: boot non completato entro {0}s".format(timeout))
+    return False
+
+def chiudi_ldplayer():
+    print(">>> [LDPlayer] chiusura istanza {0}...".format(LD_INDEX))
+    subprocess.Popen(
+        [LDCONSOLE, "quit", "--index", str(LD_INDEX)],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    ).communicate()
 
 def avvia_silentmock():
     adb_connect()
@@ -420,7 +468,11 @@ def esegui_tutti(max_tentativi=5, attesa=0.5):
 # AVVIO SCRIPT
 # ================================================================
 #set_next_position(4)
+if not avvia_ldplayer():
+    print("ERRORE: LDPlayer non avviato, script interrotto.")
+    sys.exit(1)
 adb_connect()
 avvia_silentmock()
 esegui_tutti(max_tentativi=15, attesa=0.5)
 # raccogli_carte(max_tentativi=15)
+# chiudi_ldplayer()   # scommenta per spegnere LDPlayer a fine ciclo
