@@ -321,9 +321,19 @@ def get_screen_size():
             _screen_size[0] = (540, 960)
     return _screen_size[0]
 
+def focalizza_ldplayer():
+    # porta la finestra LDPlayer in primo piano: i tasti della
+    # tastiera vanno solo alla finestra con il focus
+    try:
+        App.focus("LDPlayer")
+    except Exception as e:
+        print("  [focus] ATTENZIONE: focus LDPlayer fallito: {0}".format(e))
+    wait(0.3)
+
 def scroll_giu(volte=26):
     # freccia giu' sulla finestra LDPlayer: unico metodo che scorre
     # in modo affidabile (rotella, adb swipe e dragDrop non andavano)
+    focalizza_ldplayer()
     print("  [scroll] {0} pressioni di freccia giu'...".format(volte))
     for i in range(volte):
         type(Key.DOWN)
@@ -471,8 +481,10 @@ def posizionati_su_menuutenza():
 
 def sposta_mouse_neutro():
     # allontana il puntatore prima di cercare un'immagine:
-    # LDPlayer disegna il cursore nell'emulatore e puo' coprire il match
-    hover(Location(400, 300))
+    # LDPlayer disegna il cursore nell'emulatore e puo' coprire il match.
+    # Il punto deve restare DENTRO la finestra LDPlayer (non sulla
+    # barra laterale), altrove la finestra perderebbe i comandi
+    hover(Location(300, 500))
     wait(0.3)
 
 def posizionati_su_menuutenza_ingranaggio():
