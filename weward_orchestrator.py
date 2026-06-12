@@ -22,7 +22,6 @@ TOKEN_FILE_DEV  = "/data/local/tmp/weward_token.txt"
 TOKEN_FILE_LOCAL= r"C:\sviluppo\git\AutoWeWard\weward_token.txt"
 ADB_DEVICE      = "127.0.0.1:5555"
 PACKAGE         = "com.weward"
-FITINJECTOR_PKG = "com.garsal.fitinjector"
 
 STEPS           = random.randint(20500, 22000)
 
@@ -227,29 +226,23 @@ if __name__ == "__main__":
     if os.path.exists(TOKEN_FILE_LOCAL):
         os.remove(TOKEN_FILE_LOCAL)
 
-    # 4. Avvia mock posizione GPS (FitStepsInjector come MockLocationApp)
-    log("Avvio mock posizione GPS...")
-    adb(f'shell am startservice -n {FITINJECTOR_PKG}/.MockLocationService')
-    time.sleep(2)
-
-    # 5. Avvia WeWard via ADB
+    # 4. Avvia WeWard via ADB
     log("Apertura WeWard via ADB...")
     adb(f"shell monkey -p {PACKAGE} -c android.intent.category.LAUNCHER 1")
     time.sleep(5)  # attendi caricamento app
 
-    # 6. Ottieni PID WeWard dopo avvio
+    # 5. Ottieni PID WeWard dopo avvio
     pid = get_pid()
     if not pid:
         log("ERRORE: impossibile ottenere PID WeWard.")
-        adb(f'shell am stopservice -n {FITINJECTOR_PKG}/.MockLocationService')
         sys.exit(1)
 
-    # 7. Avvia Frida JS agganciato al PID aggiornato
+    # 6. Avvia Frida JS agganciato al PID aggiornato
     token_holder = {"token": None}
     frida_proc, token_event = launch_frida_js(pid, token_holder)
     time.sleep(2)
 
-    # 8. Attendi token tramite evento
+    # 7. Attendi token tramite evento
     log("Attendo token...")
     token_event.wait(timeout=60)
 
@@ -257,24 +250,19 @@ if __name__ == "__main__":
     if not token:
         log("ERRORE: Token non ricevuto entro il timeout.")
         frida_proc.terminate()
-        adb(f'shell am stopservice -n {FITINJECTOR_PKG}/.MockLocationService')
         sys.exit(1)
 
     log(f"Token: {token[:30]}...")
 
-    # 9. Termina Frida (già terminato dal thread, ma per sicurezza)
+    # 8. Termina Frida (già terminato dal thread, ma per sicurezza)
     try:
         frida_proc.terminate()
     except:
         pass
     time.sleep(1)
 
-    # 10. Invia passi
+    # 9. Invia passi
     success = send_steps(token, STEPS, real_headers=token_holder.get("headers"))
-
-    # 11. Ferma mock posizione
-    adb(f'shell am stopservice -n {FITINJECTOR_PKG}/.MockLocationService')
-
     if success:
         log(f"=== Completato! {STEPS} passi inviati con successo ===")
     else:

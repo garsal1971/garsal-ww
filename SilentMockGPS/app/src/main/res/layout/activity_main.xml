@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F5F5F5">
+
+    <!-- Barra stato (visibile solo quando in esecuzione) -->
+    <LinearLayout
+        android:id="@+id/statusBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#1B5E20"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        android:gravity="center_vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="12sp"
+            android:textColor="#FFFFFF"
+            android:ellipsize="end"
+            android:maxLines="1"/>
+
+        <TextView
+            android:id="@+id/countdownText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#69F0AE"
+            android:layout_marginLeft="8dp"/>
+
+    </LinearLayout>
+
+    <!-- Contenuto scrollabile -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <!-- Card tabella coordinate -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#FFFFFF"
+                android:layout_marginBottom="10dp"
+                android:elevation="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingLeft="12dp"
+                    android:paddingRight="12dp"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="6dp"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Coordinate salvate"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="#424242"/>
+
+                    <Button
+                        android:id="@+id/selectAllButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="44dp"
+                        android:text="Tutti"
+                        android:textSize="14sp"
+                        android:paddingLeft="16dp"
+                        android:paddingRight="16dp"
+                        android:backgroundTint="#607D8B"
+                        android:textColor="#FFFFFF"/>
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/coordTableLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"/>
+
+                <TextView
+                    android:id="@+id/emptyTableText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Nessuna coordinata. Aggiungine dalla casella sotto."
+                    android:textSize="13sp"
+                    android:textColor="#9E9E9E"
+                    android:gravity="center"
+                    android:padding="16dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp">
+
+                    <Button
+                        android:id="@+id/mapsButton"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:text="Maps"
+                        android:textSize="13sp"
+                        android:layout_marginRight="4dp"
+                        android:backgroundTint="#1976D2"
+                        android:textColor="#FFFFFF"
+                        android:enabled="false"/>
+
+                    <Button
+                        android:id="@+id/addToInputButton"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:text="Usa"
+                        android:textSize="13sp"
+                        android:layout_marginLeft="4dp"
+                        android:layout_marginRight="4dp"
+                        android:backgroundTint="#F57C00"
+                        android:textColor="#FFFFFF"
+                        android:enabled="false"/>
+
+                    <Button
+                        android:id="@+id/deleteButton"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:text="Cancella"
+                        android:textSize="13sp"
+                        android:layout_marginLeft="4dp"
+                        android:backgroundTint="#C62828"
+                        android:textColor="#FFFFFF"
+                        android:enabled="false"/>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- Card input nuove coordinate -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#FFFFFF"
+                android:padding="12dp"
+                android:layout_marginBottom="10dp"
+                android:elevation="2dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Aggiungi coordinate (lat,lon — una per riga)"
+                    android:textSize="12sp"
+                    android:textColor="#757575"
+                    android:layout_marginBottom="8dp"/>
+
+                <EditText
+                    android:id="@+id/coordinatesInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minLines="3"
+                    android:maxLines="8"
+                    android:gravity="top"
+                    android:inputType="textMultiLine"
+                    android:hint="44.5072,11.3621&#10;44.5103,11.3595"
+                    android:textSize="14sp"
+                    android:fontFamily="monospace"
+                    android:padding="10dp"
+                    android:background="@android:drawable/edit_text"
+                    android:layout_marginBottom="8dp"/>
+
+                <Button
+                    android:id="@+id/addCoordsButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Aggiungi alla tabella"
+                    android:textSize="14sp"
+                    android:backgroundTint="#1565C0"
+                    android:textColor="#FFFFFF"/>
+
+                <Button
+                    android:id="@+id/readGpsButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Leggi posizione GPS"
+                    android:textSize="14sp"
+                    android:backgroundTint="#00796B"
+                    android:textColor="#FFFFFF"
+                    android:layout_marginTop="8dp"/>
+
+            </LinearLayout>
+
+            <!-- Impostazioni -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="10dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:background="#FFFFFF"
+                    android:padding="12dp"
+                    android:layout_marginRight="5dp"
+                    android:elevation="2dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Secondi per coord."
+                        android:textSize="12sp"
+                        android:textColor="#757575"
+                        android:layout_marginBottom="4dp"/>
+
+                    <EditText
+                        android:id="@+id/secondsInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="5"
+                        android:text="5"
+                        android:inputType="number"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:padding="6dp"
+                        android:background="@android:drawable/edit_text"/>
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:background="#FFFFFF"
+                    android:padding="12dp"
+                    android:layout_marginLeft="5dp"
+                    android:elevation="2dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Durata totale (min)"
+                        android:textSize="12sp"
+                        android:textColor="#757575"
+                        android:layout_marginBottom="4dp"/>
+
+                    <EditText
+                        android:id="@+id/minutesInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="5"
+                        android:text="5"
+                        android:inputType="number"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:padding="6dp"
+                        android:background="@android:drawable/edit_text"/>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- Bottoni controllo -->
+            <Button
+                android:id="@+id/startButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Avvia"
+                android:textSize="16sp"
+                android:backgroundTint="#2E7D32"
+                android:textColor="#FFFFFF"
+                android:padding="14dp"
+                android:layout_marginBottom="8dp"/>
+
+            <Button
+                android:id="@+id/stopButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Ferma"
+                android:textSize="16sp"
+                android:backgroundTint="#C62828"
+                android:textColor="#FFFFFF"
+                android:padding="14dp"
+                android:enabled="false"/>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</LinearLayout>
