@@ -417,7 +417,9 @@ def posizionati_su_attivita():
 
 def posizionati_su_menuutenza():
     print("  [nav] apertura menu utente...")
-    if not cerca_con_tentativi("1775217620164-3.png", 5, 0.5):
+    # l'immagine contiene la barra di stato: l'iconcina utente sta sotto,
+    # quindi il click va spostato con targetOffset (come nello script no_google)
+    if not cerca_con_tentativi(Pattern("1775217620164-3.png").targetOffset(-2, 32), 5, 0.5):
         print("  [nav] ERRORE: icona menu utente non trovata.")
         return False
     click(getLastMatch())
