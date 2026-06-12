@@ -15,7 +15,7 @@ import java.awt.event.InputEvent as InputEvent
 # CONFIGURAZIONE GENERALE
 # ================================================================
 STOP_FILE  = r"C:\Users\garsa\Desktop\stop.txt"
-LDCONSOLE  = r"C:\LDPlayer\LDPlayer9\dnconsole.exe"
+LDCONSOLE  = r"C:\LDPlayer\LDPlayer9\ldconsole.exe"   # NON dnconsole.exe: richiede privilegi admin (errore 740)
 INDEX_FILE = r"C:\Archivio\sikulix-automation\gps_index.txt"
 ADB        = r"C:\LDPlayer\LDPlayer9\adb.exe"
 ADB_PORT   = "127.0.0.1:5555"
@@ -69,35 +69,60 @@ def adb_connect():
 # ================================================================
 # LDPLAYER
 # ================================================================
-def ldplayer_in_esecuzione():
+def emulatore_pronto():
+    adb_connect()
     result = subprocess.Popen(
-        [LDCONSOLE, "isrunning", "--index", str(LD_INDEX)],
+        [ADB, "-s", ADB_PORT, "shell", "getprop sys.boot_completed"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
     out, err = result.communicate()
-    return "running" in str(out)
+    return "1" in str(out)
+
+def ldplayer_in_esecuzione():
+    # True/False dallo stato della console, None se la console non e' eseguibile
+    try:
+        result = subprocess.Popen(
+            [LDCONSOLE, "isrunning", "--index", str(LD_INDEX)],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        out, err = result.communicate()
+        return "running" in str(out)
+    except OSError as e:
+        print(">>> [LDPlayer] console non eseguibile: {0}".format(e))
+        return None
 
 def avvia_ldplayer(timeout=120):
-    if ldplayer_in_esecuzione():
+    stato = ldplayer_in_esecuzione()
+
+    if stato is True:
         print(">>> [LDPlayer] istanza {0} gia' in esecuzione".format(LD_INDEX))
         return True
 
+    if stato is None:
+        # console bloccata (es. errore 740: servono privilegi elevati):
+        # se l'emulatore e' comunque gia' acceso, proseguiamo lo stesso
+        if emulatore_pronto():
+            print(">>> [LDPlayer] console non disponibile ma emulatore attivo, proseguo")
+            return True
+        print(">>> [LDPlayer] ERRORE: console bloccata ed emulatore spento.")
+        print(">>>            Avvia SikuliX come amministratore oppure apri LDPlayer a mano.")
+        return False
+
     print(">>> [LDPlayer] avvio istanza {0}...".format(LD_INDEX))
-    subprocess.Popen(
-        [LDCONSOLE, "launch", "--index", str(LD_INDEX)],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
+    try:
+        subprocess.Popen(
+            [LDCONSOLE, "launch", "--index", str(LD_INDEX)],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+    except OSError as e:
+        print(">>> [LDPlayer] ERRORE: impossibile lanciare la console: {0}".format(e))
+        print(">>>            Avvia SikuliX come amministratore oppure apri LDPlayer a mano.")
+        return False
 
     inizio = time.time()
     while time.time() - inizio < timeout:
         check_stop()
-        adb_connect()
-        result = subprocess.Popen(
-            [ADB, "-s", ADB_PORT, "shell", "getprop sys.boot_completed"],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        out, err = result.communicate()
-        if "1" in str(out):
+        if emulatore_pronto():
             print(">>> [LDPlayer] boot completato in {0}s".format(int(time.time() - inizio)))
             wait(5)   # margine per il caricamento della home
             return True
@@ -108,10 +133,13 @@ def avvia_ldplayer(timeout=120):
 
 def chiudi_ldplayer():
     print(">>> [LDPlayer] chiusura istanza {0}...".format(LD_INDEX))
-    subprocess.Popen(
-        [LDCONSOLE, "quit", "--index", str(LD_INDEX)],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    ).communicate()
+    try:
+        subprocess.Popen(
+            [LDCONSOLE, "quit", "--index", str(LD_INDEX)],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        ).communicate()
+    except OSError as e:
+        print(">>> [LDPlayer] ERRORE: impossibile chiudere via console: {0}".format(e))
 
 def posiziona_finestra_ldplayer(x=0, y=0):
     # sposta la finestra di LDPlayer (processo dnplayer) in (x, y)
