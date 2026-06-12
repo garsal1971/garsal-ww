@@ -482,6 +482,28 @@ def esci_weward():
     esci()
     print(">>> [esci_weward] logout completato OK")
 
+def assicura_account_scollegato():
+    # WeWard deve mostrare la schermata di login: se invece c'e' ancora
+    # la sessione del giro precedente, esegui il logout e riapri l'app
+    print(">>> [pre-login] verifico che nessun account sia collegato...")
+    if exists("1776968842981.png", 3):
+        print(">>> [pre-login] schermata di login presente, OK")
+        return True
+
+    print(">>> [pre-login] sessione attiva rilevata, eseguo logout...")
+    esci_weward()
+    wait(1)
+
+    if not apri_weward():
+        print(">>> [pre-login] ERRORE: impossibile riaprire WeWard dopo il logout.")
+        return False
+    if exists("1776968842981.png", 5):
+        print(">>> [pre-login] account scollegato, schermata di login OK")
+        return True
+
+    print(">>> [pre-login] ERRORE: schermata di login non trovata dopo il logout.")
+    return False
+
 # ================================================================
 # RACCOLTA CARTE
 # ================================================================
@@ -568,7 +590,13 @@ def esegui_tutti(max_tentativi=5, attesa=0.5):
 
         if not apri_weward(max_tentativi, attesa):
             print("ERRORE: impossibile aprire WeWard, script interrotto.")
-            continue 
+            continue
+
+        if not assicura_account_scollegato():
+            print("  account precedente ancora collegato, salto {0}.".format(account))
+            risultati[account] = 'FAIL'
+            continue
+
         print("\n------------------------------")
         ok = apri_account(account, max_tentativi, attesa)
         risultati[account] = 'OK' if ok else 'FAIL'
