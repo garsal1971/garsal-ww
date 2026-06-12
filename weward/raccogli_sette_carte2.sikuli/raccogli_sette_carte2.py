@@ -5,6 +5,7 @@ import math
 import subprocess
 import os
 import random
+import re
 
 sys.path.append(getBundlePath())
 from sikuli import *
@@ -301,16 +302,39 @@ def inietta_passi(email, passi=None, timeout=60):
 # ================================================================
 # UTILITY GENERALI
 # ================================================================
-def scroll_giu(volte=35, x=185, y=400, sposta_mouse=True):
-    # scroll affidabile con Robot: posiziona il mouse sull'area
-    # scrollabile e manda gli scatti uno alla volta (wheel() di SikuliX
-    # li spara tutti insieme e l'emulatore li perde)
-    if sposta_mouse:
-        _robot.mouseMove(x, y)
-        wait(0.2)
+_screen_size = [None]
+
+def get_screen_size():
+    # risoluzione interna dell'emulatore (es. "Physical size: 540x960")
+    if _screen_size[0] is None:
+        adb_connect()
+        result = subprocess.Popen(
+            [ADB, "-s", ADB_PORT, "shell", "wm size"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        out, err = result.communicate()
+        m = re.search(r"(\d+)x(\d+)", str(out))
+        if m:
+            _screen_size[0] = (int(m.group(1)), int(m.group(2)))
+        else:
+            print(">>> [scroll] wm size non leggibile, uso default 540x960")
+            _screen_size[0] = (540, 960)
+    return _screen_size[0]
+
+def scroll_giu(volte=6):
+    # scroll dentro l'emulatore via adb (input swipe): indipendente
+    # da posizione della finestra, focus e puntatore del mouse
+    w, h = get_screen_size()
+    x  = w // 2
+    y1 = int(h * 0.75)
+    y2 = int(h * 0.25)
     for i in range(volte):
-        _robot.mouseWheel(3)
-        wait(0.05)
+        subprocess.Popen(
+            [ADB, "-s", ADB_PORT, "shell",
+             "input swipe {0} {1} {2} {3} 400".format(x, y1, x, y2)],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        ).communicate()
+        wait(0.4)
 
 def cerca_con_tentativi(immagine, max_tentativi=5, attesa=0.5):
     for t in range(1, max_tentativi + 1):
@@ -469,7 +493,7 @@ def esci():
     click(getLastMatch())
     print("  [logout 1/4] pulsante Esci cliccato OK")
     wait(0.5)
-    scroll_giu(volte=35, x=185, y=400)
+    scroll_giu(volte=6)
 
     print("  [logout 2/4] prima conferma logout...")
     if not cerca_con_tentativi("1775217958402-3.png", 5, 0.5):
