@@ -110,6 +110,31 @@ def chiudi_ldplayer():
         stdout=subprocess.PIPE, stderr=subprocess.PIPE
     ).communicate()
 
+def posiziona_finestra_ldplayer(x=0, y=0):
+    # sposta la finestra di LDPlayer (processo dnplayer) in (x, y)
+    # senza ridimensionarla, via SetWindowPos di user32.dll
+    print(">>> [LDPlayer] sposto la finestra in ({0}, {1})...".format(x, y))
+    ps = (
+        "$sig = '[DllImport(\"user32.dll\")] public static extern bool "
+        "SetWindowPos(IntPtr hWnd, IntPtr hAfter, int X, int Y, int W, int H, uint uFlags);'; "
+        "Add-Type -MemberDefinition $sig -Name Win -Namespace Native; "
+        "$p = Get-Process dnplayer -ErrorAction SilentlyContinue | "
+        "Where-Object {{ $_.MainWindowHandle -ne 0 }} | Select-Object -First 1; "
+        "if ($p) {{ [Native.Win]::SetWindowPos($p.MainWindowHandle, [IntPtr]::Zero, "
+        "{0}, {1}, 0, 0, 0x0001 -bor 0x0004) }} else {{ Write-Output 'NOWINDOW' }}"
+    ).format(x, y)
+    result = subprocess.Popen(
+        ["powershell", "-NoProfile", "-Command", ps],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    out, err = result.communicate()
+    if "NOWINDOW" in str(out):
+        print(">>> [LDPlayer] ERRORE: finestra dnplayer non trovata.")
+        return False
+    print(">>> [LDPlayer] finestra posizionata OK")
+    wait(1)
+    return True
+
 def avvia_silentmock():
     adb_connect()
     result = subprocess.Popen(
@@ -471,6 +496,7 @@ def esegui_tutti(max_tentativi=5, attesa=0.5):
 if not avvia_ldplayer():
     print("ERRORE: LDPlayer non avviato, script interrotto.")
     sys.exit(1)
+posiziona_finestra_ldplayer(0, 0)
 adb_connect()
 avvia_silentmock()
 esegui_tutti(max_tentativi=15, attesa=0.5)
