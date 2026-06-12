@@ -427,9 +427,18 @@ def posizionati_su_menuutenza():
     wait(0.5)
     return True
 
+def sposta_mouse_neutro():
+    # allontana il puntatore prima di cercare un'immagine:
+    # LDPlayer disegna il cursore nell'emulatore e puo' coprire il match
+    hover(Location(400, 300))
+    wait(0.3)
+
 def posizionati_su_menuutenza_ingranaggio():
     print("  [nav] apertura impostazioni ingranaggio...")
-    if not cerca_con_tentativi("1775217843520-3.png", 5, 0.5):
+    sposta_mouse_neutro()
+    # l'immagine include la barra di stato: l'ingranaggio sta sotto,
+    # click spostato con targetOffset (come nello script no_google)
+    if not cerca_con_tentativi(Pattern("1775217843520-3.png").targetOffset(20, 19), 5, 0.5):
         print("  [nav] ERRORE: icona ingranaggio non trovata.")
         return False
     click(getLastMatch())
