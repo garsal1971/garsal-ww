@@ -321,16 +321,13 @@ def get_screen_size():
             _screen_size[0] = (540, 960)
     return _screen_size[0]
 
-def scroll_giu(volte=4, x=185, y_da=550, y_a=200):
-    # trascinamento col mouse sulla finestra LDPlayer: viene tradotto
-    # in uno swipe touch, lo stesso gesto dello scroll manuale.
-    # (rotella e 'adb input swipe' non funzionavano)
-    Settings.MoveMouseDelay = 0.3
+def scroll_giu(volte=26):
+    # freccia giu' sulla finestra LDPlayer: unico metodo che scorre
+    # in modo affidabile (rotella, adb swipe e dragDrop non andavano)
+    print("  [scroll] {0} pressioni di freccia giu'...".format(volte))
     for i in range(volte):
-        print("  [scroll] trascinamento {0}/{1}...".format(i + 1, volte))
-        dragDrop(Location(x, y_da), Location(x, y_a))
-        wait(0.5)
-    Settings.MoveMouseDelay = 0.5
+        type(Key.DOWN)
+        wait(0.05)
 
 def scroll_giu_adb(volte=6):
     # variante via adb (input swipe), tenuta come ripiego
@@ -503,7 +500,7 @@ def esci():
     click(getLastMatch())
     print("  [logout 1/4] pulsante Esci cliccato OK")
     wait(0.5)
-    scroll_giu(volte=4)
+    scroll_giu(volte=26)
 
     print("  [logout 2/4] prima conferma logout...")
     if not cerca_con_tentativi("1775217958402-3.png", 5, 0.5):
