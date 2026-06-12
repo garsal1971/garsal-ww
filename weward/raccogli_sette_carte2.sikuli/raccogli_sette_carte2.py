@@ -301,6 +301,17 @@ def inietta_passi(email, passi=None, timeout=60):
 # ================================================================
 # UTILITY GENERALI
 # ================================================================
+def scroll_giu(volte=35, x=185, y=400, sposta_mouse=True):
+    # scroll affidabile con Robot: posiziona il mouse sull'area
+    # scrollabile e manda gli scatti uno alla volta (wheel() di SikuliX
+    # li spara tutti insieme e l'emulatore li perde)
+    if sposta_mouse:
+        _robot.mouseMove(x, y)
+        wait(0.2)
+    for i in range(volte):
+        _robot.mouseWheel(3)
+        wait(0.05)
+
 def cerca_con_tentativi(immagine, max_tentativi=5, attesa=0.5):
     for t in range(1, max_tentativi + 1):
         if exists(immagine):
@@ -451,13 +462,14 @@ def posizionati_su_menuutenza_ingranaggio():
 # ================================================================
 def esci():
     print("  [logout 1/4] cerco pulsante Esci...")
+    sposta_mouse_neutro()
     if not cerca_con_tentativi("1775218288286-3.png", 5, 0.5):
         print("  [logout 1/4] ERRORE: pulsante Esci non trovato.")
         return False
     click(getLastMatch())
     print("  [logout 1/4] pulsante Esci cliccato OK")
     wait(0.5)
-    wheel(WHEEL_DOWN, 35)
+    scroll_giu(volte=35, x=185, y=400)
 
     print("  [logout 2/4] prima conferma logout...")
     if not cerca_con_tentativi("1775217958402-3.png", 5, 0.5):
