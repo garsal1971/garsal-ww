@@ -19,14 +19,11 @@ An Android app that reads a step count from a file on the device's SD card and i
 2. Click **Create Credentials > OAuth client ID**.
 3. Application type: **Android**.
 4. Package name: `com.garsal.fitinjector`
-5. SHA-1 certificate fingerprint:
-   - For debug builds, run:
-     ```
-     keytool -keystore ~/.android/debug.keystore \
-             -list -v \
-             -storepass android
-     ```
-   - Copy the SHA-1 value shown.
+5. SHA-1 certificate fingerprint (firma fissa del keystore CI):
+   ```
+   9E:0D:F1:6D:F2:FF:DE:A5:1B:43:26:E4:B8:30:B1:8F:15:53:D9:C1
+   ```
+   Questo valore è sempre lo stesso perché il keystore è hardcodato nel workflow `build-fitinjector.yml`.
 6. Click **Create**. Note your Client ID.
 
 ### 3. Set Up Firebase and Download google-services.json
@@ -41,18 +38,31 @@ An Android app that reads a step count from a file on the device's SD card and i
 
 ### 4. Build the APK
 
-```bash
-cd FitStepsInjector
-./gradlew assembleDebug
-```
+Il build avviene tramite **GitHub Actions** (workflow `build-fitinjector.yml`), che parte automaticamente ad ogni push su `master` o su branch `claude/**`.
 
-The APK will be at: `app/build/outputs/apk/debug/app-debug.apk`
+1. Vai su **GitHub → Actions → Build FitStepsInjector APK**
+2. Apri l'ultimo run completato con successo
+3. Scorri fino alla sezione **Artifacts** in fondo alla pagina
+4. Scarica `FitStepsInjector-signed-<numero_run>`
+
+L'APK scaricato è già firmato con il keystore fisso (SHA-1 sopra).
+
+> Non usare `./gradlew assembleDebug` in locale: l'APK prodotto avrebbe
+> una firma diversa (debug key locale) e Android chiederebbe di
+> disinstallare quella CI prima di installarlo.
 
 ### 5. Install on Device
 
 ```bash
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb install -r FitStepsInjector-signed-XX.apk
 ```
+
+> **Nota — prima installazione / cambio keystore**
+> Se sul telefono è già installata una versione firmata con una chiave
+> diversa, Android rifiuta l'aggiornamento e chiede di disinstallare.
+> Basta disinstallare l'app vecchia una sola volta; da quel momento tutti
+> i build successivi usano lo stesso keystore fisso e si installano senza
+> problemi.
 
 ---
 
@@ -127,6 +137,28 @@ FitStepsInjector/
 
 ---
 
+## MockLocationService (posizione GPS fasulla)
+
+Il service mantiene una posizione GPS fasulla stabile su WeWard senza root.
+
+**Prerequisito una-tantum sul telefono:**
+`Impostazioni → Opzioni Sviluppatore → App per posizione fittizia → FitStepsInjector`
+
+**Comandi ADB:**
+```bash
+# Avvia (posizione default: Milano 45.4654, 9.1859)
+adb shell am startservice -n com.garsal.fitinjector/.MockLocationService
+
+# Avvia con coordinate personalizzate
+adb shell am startservice -n com.garsal.fitinjector/.MockLocationService \
+    --ef lat 45.4654219 --ef lng 9.1859243
+
+# Ferma
+adb shell am stopservice -n com.garsal.fitinjector/.MockLocationService
+```
+
+---
+
 ## Troubleshooting
 
 | Symptom | Fix |
@@ -136,3 +168,5 @@ FitStepsInjector/
 | `API_NOT_CONNECTED` | Fitness API not enabled in Cloud Console, or SHA-1 mismatch |
 | Result file not created | Check `adb logcat -s FitStepsInjector` for stack trace |
 | Steps not visible in Google Fit app | Google Fit may take a few minutes to sync; also verify the account on the device matches the authorized account |
+| Android chiede di disinstallare prima di installare | La versione sul telefono è firmata con una chiave diversa da quella del CI. Disinstalla l'app vecchia una volta sola, poi installa l'APK dal CI. Non succederà più finché il keystore nel workflow non cambia. |
+| MockLocationService non funziona / posizione reale ancora visibile | Controllare che l'app sia selezionata come "App per posizione fittizia" nelle Opzioni Sviluppatore del telefono |

@@ -32,11 +32,20 @@ public class MockLocationService extends Service {
     public static final String EXTRA_SECONDS = "seconds";
     public static final String EXTRA_MINUTES = "minutes";
 
+    // Intervallo di refresh della posizione fasulla.
+    // Senza questo, tra un ciclo e l'altro (anche 30 s) Android torna al GPS reale.
+    private static final long REFRESH_MS = 1000L;
+
     private static volatile boolean running = false;
 
     private Handler handler;
     private Runnable cycleRunnable;
+    private Runnable refreshRunnable;
     private long stopAt = 0;
+
+    // Coordinate correnti: aggiornate dal ciclo, lette dal refresh
+    private volatile double currentLat = 0;
+    private volatile double currentLon = 0;
 
     public static boolean isRunning() { return running; }
 
@@ -82,6 +91,25 @@ public class MockLocationService extends Service {
         stopAt = System.currentTimeMillis() + (long) totalMinutes * 60 * 1000;
         final int[] index = {0};
 
+        // Imposta le coordinate iniziali prima di avviare il refresh
+        double[] first = coords.get(0);
+        currentLat = first[0];
+        currentLon = first[1];
+
+        // Timer ad alta frequenza: mantiene la posizione fasulla "fresca" ogni
+        // REFRESH_MS ms. Senza questo, tra un ciclo e l'altro Android torna al
+        // GPS reale (position drift).
+        refreshRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (!running) return;
+                if (currentLat != 0) setMockLocation(currentLat, currentLon);
+                handler.postDelayed(this, REFRESH_MS);
+            }
+        };
+        handler.post(refreshRunnable);
+
+        // Timer di ciclo: cambia coordinata ogni secondsPerCoord secondi
         cycleRunnable = new Runnable() {
             @Override
             public void run() {
@@ -92,13 +120,12 @@ public class MockLocationService extends Service {
                 }
 
                 double[] coord = coords.get(index[0] % coords.size());
-                double lat = coord[0];
-                double lon = coord[1];
-                setMockLocation(lat, lon);
+                currentLat = coord[0];
+                currentLon = coord[1];
 
                 long remaining = (stopAt - System.currentTimeMillis()) / 1000;
                 String msg = String.format("📍 %.4f, %.4f | %ds per coord | %ds rimasti",
-                        lat, lon, secondsPerCoord, remaining);
+                        currentLat, currentLon, secondsPerCoord, remaining);
                 sendStatus(msg, true);
                 updateNotification(msg);
 
@@ -116,6 +143,10 @@ public class MockLocationService extends Service {
         if (cycleRunnable != null) {
             handler.removeCallbacks(cycleRunnable);
             cycleRunnable = null;
+        }
+        if (refreshRunnable != null) {
+            handler.removeCallbacks(refreshRunnable);
+            refreshRunnable = null;
         }
         sendStatus("Fermato.", false);
         Log.d(TAG, "Ciclo fermato");
