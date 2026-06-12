@@ -504,10 +504,10 @@ def posizionati_su_menuutenza_ingranaggio():
 # LOGOUT
 # ================================================================
 def esci():
-    # 26 frecce giu' portano la selezione sul pulsante Esci in fondo
+    # 29 frecce giu' portano la selezione sul pulsante Esci in fondo
     # alla pagina impostazioni: INVIO lo attiva, senza ricerca immagine
     print("  [logout 1/4] scorro fino a Esci e premo INVIO...")
-    scroll_giu(volte=26)
+    scroll_giu(volte=29)
     wait(0.5)
     type(Key.ENTER)
     print("  [logout 1/4] INVIO su Esci OK")
