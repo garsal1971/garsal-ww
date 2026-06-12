@@ -321,9 +321,19 @@ def get_screen_size():
             _screen_size[0] = (540, 960)
     return _screen_size[0]
 
-def scroll_giu(volte=6):
-    # scroll dentro l'emulatore via adb (input swipe): indipendente
-    # da posizione della finestra, focus e puntatore del mouse
+def scroll_giu(volte=4, x=185, y_da=550, y_a=200):
+    # trascinamento col mouse sulla finestra LDPlayer: viene tradotto
+    # in uno swipe touch, lo stesso gesto dello scroll manuale.
+    # (rotella e 'adb input swipe' non funzionavano)
+    Settings.MoveMouseDelay = 0.3
+    for i in range(volte):
+        print("  [scroll] trascinamento {0}/{1}...".format(i + 1, volte))
+        dragDrop(Location(x, y_da), Location(x, y_a))
+        wait(0.5)
+    Settings.MoveMouseDelay = 0.5
+
+def scroll_giu_adb(volte=6):
+    # variante via adb (input swipe), tenuta come ripiego
     w, h = get_screen_size()
     x  = w // 2
     y1 = int(h * 0.75)
@@ -493,7 +503,7 @@ def esci():
     click(getLastMatch())
     print("  [logout 1/4] pulsante Esci cliccato OK")
     wait(0.5)
-    scroll_giu(volte=6)
+    scroll_giu(volte=4)
 
     print("  [logout 2/4] prima conferma logout...")
     if not cerca_con_tentativi("1775217958402-3.png", 5, 0.5):
