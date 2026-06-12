@@ -504,10 +504,15 @@ def posizionati_su_menuutenza_ingranaggio():
 # LOGOUT
 # ================================================================
 def esci():
-    # 29 frecce giu' portano la selezione sul pulsante Esci in fondo
+    # attesa caricamento pagina impostazioni: se le frecce partono
+    # prima del rendering, le prime pressioni vanno perse
+    print("  [logout 1/4] attendo caricamento pagina impostazioni...")
+    wait(2.5)
+
+    # 26 frecce giu' portano la selezione sul pulsante Esci in fondo
     # alla pagina impostazioni: INVIO lo attiva, senza ricerca immagine
     print("  [logout 1/4] scorro fino a Esci e premo INVIO...")
-    scroll_giu(volte=29)
+    scroll_giu(volte=26)
     wait(0.5)
     type(Key.ENTER)
     print("  [logout 1/4] INVIO su Esci OK")
