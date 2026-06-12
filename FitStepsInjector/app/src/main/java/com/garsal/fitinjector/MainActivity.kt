@@ -18,6 +18,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.fitness.Fitness
 import com.google.android.gms.fitness.FitnessOptions
@@ -53,6 +54,10 @@ class MainActivity : AppCompatActivity() {
     private var pendingSteps: Int = -1
     private var pendingAction: PendingAction = PendingAction.NONE
 
+    // Modalità automatica: account e passi arrivano dagli extra dell'Intent (via adb)
+    private var autoMode = false
+    private var autoAccountEmail: String? = null
+
     private enum class PendingAction { NONE, READ, INJECT }
 
     private val fitnessOptions: FitnessOptions by lazy {
@@ -62,12 +67,13 @@ class MainActivity : AppCompatActivity() {
             .build()
     }
 
-    private val signInClient by lazy {
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+    private fun buildSignInClient(): GoogleSignInClient {
+        val builder = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestEmail()
             .addExtension(fitnessOptions)
-            .build()
-        GoogleSignIn.getClient(this, gso)
+        // in modalità automatica forza l'account richiesto (deve già esistere sul dispositivo)
+        autoAccountEmail?.let { builder.setAccountName(it) }
+        return GoogleSignIn.getClient(this, builder.build())
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -107,9 +113,42 @@ class MainActivity : AppCompatActivity() {
             checkGoogleFitAuth()
         }
 
-        // Carica i passi attuali all'avvio
-        pendingAction = PendingAction.READ
+        // Se lanciata via adb con extra account/steps parte l'iniezione automatica,
+        // altrimenti comportamento manuale: carica i passi attuali
+        if (!handleAutoIntent(intent)) {
+            pendingAction = PendingAction.READ
+            requestActivityRecognitionThenLoad()
+        }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleAutoIntent(intent)
+    }
+
+    private fun handleAutoIntent(intent: Intent?): Boolean {
+        val email = intent?.getStringExtra("account")
+        val steps = intent?.getIntExtra("steps", -1) ?: -1
+        if (email.isNullOrBlank() || steps <= 0) return false
+
+        autoMode = true
+        autoAccountEmail = email
+        pendingSteps = steps
+        pendingAction = PendingAction.INJECT
+        stepsInput.setText(steps.toString())
+        updateStatus("Auto: iniezione di $steps passi su $email...")
+        Log.d(TAG, "Auto mode: account=$email steps=$steps")
+
+        // rimuovi l'esito precedente, lo script attende quello nuovo
+        try {
+            File(RESULT_FILE).delete()
+        } catch (e: Exception) {
+            Log.e(TAG, "Impossibile rimuovere il file risultato: ${e.message}")
+        }
+
         requestActivityRecognitionThenLoad()
+        return true
     }
 
     private fun requestActivityRecognitionThenLoad() {
@@ -128,19 +167,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkGoogleFitAuth() {
-        signInClient.silentSignIn()
+        val client = buildSignInClient()
+        client.silentSignIn()
             .addOnSuccessListener { account ->
                 showAccount(account)
                 if (!GoogleSignIn.hasPermissions(account, fitnessOptions)) {
                     updateStatus("Richiesta autorizzazione Google Fit...")
-                    startActivityForResult(signInClient.signInIntent, RC_SIGN_IN)
+                    startActivityForResult(client.signInIntent, RC_SIGN_IN)
                 } else {
                     executePendingAction(account)
                 }
             }
             .addOnFailureListener {
                 updateStatus("Accedi con Google Fit...")
-                startActivityForResult(signInClient.signInIntent, RC_SIGN_IN)
+                startActivityForResult(client.signInIntent, RC_SIGN_IN)
             }
     }
 
@@ -264,6 +304,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 .addOnFailureListener { e ->
                     updateStatus("Autorizzazione Google Fit negata")
+                    if (autoMode) writeResult("ERROR:signin:${e.message}")
                     Log.e(TAG, "Sign-in fallito", e)
                 }
         }

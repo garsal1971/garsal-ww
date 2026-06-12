@@ -4,6 +4,7 @@ import sys
 import math
 import subprocess
 import os
+import random
 
 sys.path.append(getBundlePath())
 from sikuli import *
@@ -19,6 +20,8 @@ INDEX_FILE = r"C:\Archivio\sikulix-automation\gps_index.txt"
 ADB        = r"C:\LDPlayer\LDPlayer9\adb.exe"
 ADB_PORT   = "127.0.0.1:5555"
 WEWARD_PKG = "com.weward"
+FITINJ_PKG = "com.garsal.fitinjector"
+STEPS_RESULT = "/sdcard/steps_result.txt"
 LD_INDEX   = 0   # indice istanza LDPlayer (0 = prima istanza, porta 5555)
 
 _robot = Robot()
@@ -189,22 +192,83 @@ def set_next_position(idx=None):
 # ================================================================
 ACCOUNT_CONFIG = {
     'garsal1971': {
-        'google': "1776969044180.png"
-    }
-,
+        'google': "1776969044180.png",
+        'email':  "garsal1971@gmail.com"
+    },
     'adagarofalobognanni': {
-        'google': "1776969054823.png"
+        'google': "1776969054823.png",
+        'email':  "adagarofalobognanni@gmail.com"
     },
     'berros1974': {
-        'google': "1776969065567.png"
+        'google': "1776969065567.png",
+        'email':  "berros1974@gmail.com"
     },
     'gmx.salgar71': {
-        'google': "1776969075679.png"
+        'google': "1776969075679.png",
+        'email':  None   # email Google mancante: iniezione passi saltata
     },
     'berros7426': {
-        'google': "1776969088481.png"
+        'google': "1776969088481.png",
+        'email':  "berros7426@gmail.com"
     }
 }
+
+# ================================================================
+# INIEZIONE PASSI (FitStepsInjector)
+# ================================================================
+def inietta_passi(email, passi=None, timeout=60):
+    if passi is None:
+        passi = random.randint(20000, 23500)
+
+    print(">>> [passi] inietto {0} passi su {1}...".format(passi, email))
+    adb_connect()
+
+    # permessi storage per il file di risultato (idempotente)
+    for perm in ("android.permission.WRITE_EXTERNAL_STORAGE",
+                 "android.permission.READ_EXTERNAL_STORAGE"):
+        subprocess.Popen(
+            [ADB, "-s", ADB_PORT, "shell",
+             "pm grant {0} {1}".format(FITINJ_PKG, perm)],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        ).communicate()
+
+    # rimuovi l'esito della run precedente
+    subprocess.Popen(
+        [ADB, "-s", ADB_PORT, "shell", "rm -f " + STEPS_RESULT],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    ).communicate()
+
+    cmd = ("am start -n {0}/.MainActivity --es account {1} "
+           "--ei steps {2} --ez auto true").format(FITINJ_PKG, email, passi)
+    subprocess.Popen(
+        [ADB, "-s", ADB_PORT, "shell", cmd],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    ).communicate()
+
+    inizio = time.time()
+    while time.time() - inizio < timeout:
+        check_stop()
+        result = subprocess.Popen(
+            [ADB, "-s", ADB_PORT, "shell", "cat " + STEPS_RESULT],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        out, err = result.communicate()
+        esito = str(out).strip()
+
+        if "OK:" in esito:
+            print(">>> [passi] iniezione completata: " + esito)
+            subprocess.Popen(
+                [ADB, "-s", ADB_PORT, "shell", "am force-stop " + FITINJ_PKG],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            ).communicate()
+            return True
+        if "ERROR:" in esito:
+            print(">>> [passi] ERRORE iniezione: " + esito)
+            return False
+        wait(2)
+
+    print(">>> [passi] TIMEOUT: nessun esito entro {0}s".format(timeout))
+    return False
 
 # ================================================================
 # UTILITY GENERALI
@@ -466,6 +530,14 @@ def esegui_tutti(max_tentativi=5, attesa=0.5):
     risultati = {}
     for account in ACCOUNT_CONFIG:
         wait(1.5)
+
+        email = ACCOUNT_CONFIG[account].get('email')
+        if email:
+            if not inietta_passi(email):
+                print("  ATTENZIONE: iniezione passi fallita per {0}, proseguo comunque.".format(account))
+        else:
+            print("  email non configurata per {0}, iniezione passi saltata.".format(account))
+
         if not apri_weward(max_tentativi, attesa):
             print("ERRORE: impossibile aprire WeWard, script interrotto.")
             continue 
