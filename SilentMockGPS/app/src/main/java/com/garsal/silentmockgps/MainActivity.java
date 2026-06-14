@@ -374,25 +374,25 @@ public class MainActivity extends Activity {
             return;
         }
         LocationManager lm = (LocationManager) getSystemService(LOCATION_SERVICE);
-        // Usa l'ultima posizione nota se è recente (< 30 secondi)
+        // Usa l'ultima posizione nota se è recente (< 5 minuti)
         Location last = null;
         try { last = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER); } catch (Exception ignored) {}
         if (last == null) {
             try { last = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER); } catch (Exception ignored) {}
         }
-        if (last != null && (System.currentTimeMillis() - last.getTime()) < 30_000) {
+        if (last != null && (System.currentTimeMillis() - last.getTime()) < 300_000) {
             addGpsCoordToInput(last);
             return;
         }
         // Richiedi fix fresco da GPS e Network in parallelo: vince il primo che risponde.
         // removeUpdates(listener) rimuove il listener da tutti i provider registrati.
-        Toast.makeText(this, "Acquisizione GPS in corso...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Acquisizione GPS in corso (max 15s)...", Toast.LENGTH_LONG).show();
         readGpsButton.setEnabled(false);
         final LocationListener[] ref = {null};
         final Runnable timeout = () -> {
             if (ref[0] != null) lm.removeUpdates(ref[0]);
             readGpsButton.setEnabled(!MockLocationService.isRunning());
-            Toast.makeText(this, "GPS: nessun segnale. Riprova all'aperto.", Toast.LENGTH_LONG).show();
+            Toast.makeText(MainActivity.this, "GPS: nessun segnale. Riprova all'aperto.", Toast.LENGTH_LONG).show();
         };
         ref[0] = new LocationListener() {
             @Override
@@ -417,10 +417,10 @@ public class MainActivity extends Activity {
         } catch (Exception ignored) {}
         if (!registeredAny) {
             readGpsButton.setEnabled(!MockLocationService.isRunning());
-            Toast.makeText(this, "GPS non disponibile", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "GPS non disponibile", Toast.LENGTH_LONG).show();
             return;
         }
-        countdownHandler.postDelayed(timeout, 30_000);
+        countdownHandler.postDelayed(timeout, 15_000);
     }
 
     private void addGpsCoordToInput(Location loc) {
