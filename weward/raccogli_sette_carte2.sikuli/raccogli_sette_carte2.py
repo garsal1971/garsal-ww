@@ -243,6 +243,19 @@ ACCOUNT_CONFIG = {
 }
 
 # ================================================================
+# CONFIGURAZIONE TEST
+# ----------------------------------------------------------------
+# ACCOUNT_DA_ESEGUIRE: sottoinsieme di account da eseguire in questo
+#   run; lista vuota [] = tutti gli account di ACCOUNT_CONFIG.
+# SOLO_LOGIN: True = ferma ogni account subito dopo il login,
+#   senza raccolta carte ne' logout (modalita' test apertura account).
+# INIETTA_PASSI: False = salta l'iniezione passi (isola il login).
+# ================================================================
+ACCOUNT_DA_ESEGUIRE = ['adagarofalobognanni']
+SOLO_LOGIN          = True
+INIETTA_PASSI       = False
+
+# ================================================================
 # INIEZIONE PASSI (FitStepsInjector)
 # ================================================================
 def inietta_passi(email, passi=None, timeout=60):
@@ -660,15 +673,23 @@ def esegui_tutti(max_tentativi=5, attesa=0.5):
     print("AVVIO CICLO SU TUTTI GLI ACCOUNT")
     print("==============================")
     risultati = {}
-    for account in ACCOUNT_CONFIG:
+    accounts = ACCOUNT_DA_ESEGUIRE if ACCOUNT_DA_ESEGUIRE else list(ACCOUNT_CONFIG.keys())
+    for account in accounts:
+        if account not in ACCOUNT_CONFIG:
+            print("  account {0} non presente in ACCOUNT_CONFIG, salto.".format(account))
+            continue
+
         wait(1.5)
 
-        email = ACCOUNT_CONFIG[account].get('email')
-        if email:
-            if not inietta_passi(email):
-                print("  ATTENZIONE: iniezione passi fallita per {0}, proseguo comunque.".format(account))
+        if INIETTA_PASSI:
+            email = ACCOUNT_CONFIG[account].get('email')
+            if email:
+                if not inietta_passi(email):
+                    print("  ATTENZIONE: iniezione passi fallita per {0}, proseguo comunque.".format(account))
+            else:
+                print("  email non configurata per {0}, iniezione passi saltata.".format(account))
         else:
-            print("  email non configurata per {0}, iniezione passi saltata.".format(account))
+            print("  [TEST] iniezione passi disattivata (INIETTA_PASSI=False).")
 
         if not apri_weward(max_tentativi, attesa):
             print("ERRORE: impossibile aprire WeWard, script interrotto.")
@@ -682,6 +703,11 @@ def esegui_tutti(max_tentativi=5, attesa=0.5):
         print("\n------------------------------")
         ok = apri_account(account, max_tentativi, attesa)
         risultati[account] = 'OK' if ok else 'FAIL'
+
+        if SOLO_LOGIN:
+            print("  [TEST] SOLO_LOGIN attivo: mi fermo dopo il login (esito: {0}).".format('OK' if ok else 'FAIL'))
+            continue
+
         if ok:
             posizionati_su_carte()
             if controlla_carte():
