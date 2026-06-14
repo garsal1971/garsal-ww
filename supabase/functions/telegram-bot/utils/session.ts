@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import type { StateData, UserSession, UserState } from "../types.ts";
+import type { UserSession } from "../types.ts";
 
 function client() {
   return createClient(
@@ -23,18 +23,9 @@ export async function upsertSession(
 ) {
   const { error } = await client()
     .from("user_sessions")
-    .upsert({
-      telegram_user_id: telegramUserId,
-      updated_at: new Date().toISOString(),
-      ...patch,
-    }, { onConflict: "telegram_user_id" });
+    .upsert(
+      { telegram_user_id: telegramUserId, updated_at: new Date().toISOString(), ...patch },
+      { onConflict: "telegram_user_id" },
+    );
   if (error) throw error;
-}
-
-export async function setState(
-  telegramUserId: number,
-  state: UserState,
-  stateData: StateData = {},
-) {
-  await upsertSession(telegramUserId, { state, state_data: stateData });
 }
