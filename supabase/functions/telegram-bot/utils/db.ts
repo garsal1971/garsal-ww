@@ -96,6 +96,34 @@ export async function countOffertePerCollezione(): Promise<Map<number, number>> 
   return counts;
 }
 
+// ── Users ─────────────────────────────────────────────────────────────────────
+
+export async function countActiveUsers(): Promise<number> {
+  const { count, error } = await client()
+    .from("user_sessions")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "active");
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export interface UserStats {
+  active: number;
+  pending: number;
+}
+
+export async function getUserStats(): Promise<UserStats> {
+  const { data, error } = await client()
+    .from("user_sessions")
+    .select("status");
+  if (error) throw error;
+  const rows = data ?? [];
+  return {
+    active: rows.filter((r) => r.status === "active").length,
+    pending: rows.filter((r) => r.status === "pending").length,
+  };
+}
+
 // ── Housekeeping ──────────────────────────────────────────────────────────────
 
 export async function purgeExpired(): Promise<void> {
