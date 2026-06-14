@@ -1,0 +1,6 @@
+[project]
+# Set your Supabase project reference here
+# id = "your-project-ref"
+
+[functions.telegram-bot]
+verify_jwt = false
