@@ -5,6 +5,11 @@ import { purgeExpired } from "./utils/db.ts";
 import { handleOffro } from "./handlers/offro.ts";
 import { handleCerco } from "./handlers/cerco.ts";
 import { handleLista } from "./handlers/lista.ts";
+import {
+  handleMostraOfferte,
+  handleCancellaNumero,
+  handleCancellaTutte,
+} from "./handlers/offerte.ts";
 import { handleNicknameInput, handleStart, handleIscritti, handleCancellami, HELP } from "./handlers/commands.ts";
 import { handleAccetto, showDisclaimer } from "./handlers/disclaimer.ts";
 
@@ -84,6 +89,26 @@ async function handleUpdate(update: TelegramUpdate) {
 
   if (upper === "LISTA") {
     await handleLista(msg);
+    return;
+  }
+
+  if (upper === "MOSTRA OFFERTE") {
+    await handleMostraOfferte(msg, session);
+    return;
+  }
+
+  if (upper.startsWith("CANCELLA")) {
+    const arg = upper.slice(8).trim();
+    if (arg === "TUTTE" || arg === "TUTTO") {
+      await handleCancellaTutte(msg);
+    } else {
+      const n = parseInt(arg);
+      if (!isNaN(n) && n > 0) {
+        await handleCancellaNumero(msg, n, session);
+      } else {
+        await sendMessage(msg.chat.id, "Usa <code>CANCELLA 1</code>, <code>CANCELLA TUTTE</code> oppure <code>CANCELLAMI</code> per eliminare i tuoi dati.");
+      }
+    }
     return;
   }
 
