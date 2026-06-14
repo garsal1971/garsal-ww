@@ -96,6 +96,41 @@ export async function countOffertePerCollezione(): Promise<Map<number, number>> 
   return counts;
 }
 
+// ── User's own offers ─────────────────────────────────────────────────────────
+
+export interface UserAnnuncio extends Annuncio {
+  collezioni: Collezione;
+}
+
+export async function getUserAnnunci(telegram_user_id: number): Promise<UserAnnuncio[]> {
+  const { data, error } = await client()
+    .from("annunci")
+    .select("*, collezioni(nome)")
+    .eq("telegram_user_id", telegram_user_id)
+    .eq("tipo", "ho")
+    .gt("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as UserAnnuncio[];
+}
+
+export async function deleteAnnuncio(id: number, telegram_user_id: number): Promise<void> {
+  const { error } = await client()
+    .from("annunci")
+    .delete()
+    .eq("id", id)
+    .eq("telegram_user_id", telegram_user_id);
+  if (error) throw error;
+}
+
+export async function deleteAllUserAnnunci(telegram_user_id: number): Promise<void> {
+  const { error } = await client()
+    .from("annunci")
+    .delete()
+    .eq("telegram_user_id", telegram_user_id);
+  if (error) throw error;
+}
+
 // ── Users ─────────────────────────────────────────────────────────────────────
 
 export async function countActiveUsers(): Promise<number> {

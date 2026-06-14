@@ -31,12 +31,17 @@ export type UserState = 'idle' | 'waiting_nickname' | 'pending_disclaimer';
 
 export type UserStatus = 'pending' | 'active';
 
+export interface StateData {
+  offer_map?: Record<string, number>; // progressive number → db id
+}
+
 export interface UserSession {
   telegram_user_id: number;
   telegram_username?: string;
   nickname_weward?: string;
   state: UserState;
   status: UserStatus;
+  state_data?: StateData;
   accepted_at?: string;
   updated_at: string;
 }

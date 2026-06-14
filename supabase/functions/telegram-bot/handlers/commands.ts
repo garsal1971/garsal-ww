@@ -12,11 +12,16 @@ export const HELP =
   `<code>OFFRO collezione;carta;cosa cerco</code>\n` +
   `  Pubblica un annuncio di scambio\n` +
   `  Es: <code>OFFRO Roma;3;cerco la 5 di Parigi</code>\n\n` +
-  `<code>CERCO collezione;carta</code>\n` +
-  `  Vedi chi offre quella carta\n` +
-  `  Es: <code>CERCO Roma;3</code>\n\n` +
+  `<code>CERCO collezione</code> o <code>CERCO collezione;carta</code>\n` +
+  `  Vedi chi offre quella carta\n\n` +
   `<code>LISTA</code>\n` +
   `  Mostra le collezioni con numero di offerte attive\n\n` +
+  `<code>MOSTRA OFFERTE</code>\n` +
+  `  Elenca le tue offerte attive con numero progressivo\n\n` +
+  `<code>CANCELLA 1</code>\n` +
+  `  Cancella l'offerta numero 1 (dopo MOSTRA OFFERTE)\n\n` +
+  `<code>CANCELLA TUTTE</code>\n` +
+  `  Cancella tutte le tue offerte\n\n` +
   `<code>CANCELLAMI</code>\n` +
   `  Elimina tutti i tuoi dati e annunci dal bot`;
 
