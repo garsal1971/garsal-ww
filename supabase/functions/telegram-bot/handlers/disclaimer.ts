@@ -6,13 +6,11 @@ import { countActiveUsers } from "../utils/db.ts";
 const MAX_USERS = parseInt(Deno.env.get("MAX_USERS") ?? "0"); // 0 = illimitato
 
 const DISCLAIMER_TEXT =
-  `⚠️ <b>Prima di iniziare, leggi e accetta le condizioni d'uso:</b>\n\n` +
-  `• Questo bot è un servizio non ufficiale per facilitare lo scambio di WeCards tra utenti\n` +
-  `• Non siamo affiliati con WeWard S.r.l.\n` +
-  `• Gli scambi avvengono direttamente tra utenti: il bot non è responsabile di eventuali problemi\n` +
-  `• Il tuo username Telegram e nickname WeWard saranno visibili agli altri utenti del bot\n` +
-  `• Gli annunci scadono automaticamente dopo 7 giorni\n` +
-  `• Puoi richiedere la cancellazione dei tuoi dati in qualsiasi momento\n\n` +
+  `📋 <b>Disclaimer</b>\n\n` +
+  `Questo bot è un servizio indipendente creato da utenti WeWard per facilitare lo scambio di WeCards tra collezionisti. Non è affiliato, sponsorizzato o approvato da WeWard o da WeWard SAS.\n\n` +
+  `I nomi delle collezioni e delle carte sono proprietà di WeWard SAS. Questo bot non raccoglie né conserva dati personali oltre allo username Telegram e al nickname WeWard, utilizzati esclusivamente per facilitare i contatti tra utenti. Gli annunci vengono eliminati automaticamente dopo 7 giorni.\n\n` +
+  `Puoi cancellare il tuo nickname e tutti i tuoi annunci in qualsiasi momento usando il comando <code>CANCELLAMI</code>.\n\n` +
+  `Gli scambi avvengono direttamente tra utenti: il bot non è responsabile dell'esito delle trattative.\n\n` +
   `Scrivi <b>ACCETTO</b> per confermare e continuare.`;
 
 export async function showDisclaimer(chatId: number) {
