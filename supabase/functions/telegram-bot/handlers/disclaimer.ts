@@ -3,7 +3,7 @@ import { sendMessage } from "../utils/telegram.ts";
 import { upsertSession } from "../utils/session.ts";
 import { countActiveUsers } from "../utils/db.ts";
 
-const MAX_USERS = parseInt(Deno.env.get("MAX_USERS") ?? "0"); // 0 = illimitato
+const MAX_USERS = parseInt(Deno.env.get("MAX_USERS") ?? "50");
 
 const DISCLAIMER_TEXT =
   `📋 <b>Disclaimer</b>\n\n` +
