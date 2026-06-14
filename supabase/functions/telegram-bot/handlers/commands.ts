@@ -2,6 +2,7 @@ import type { TelegramMessage } from "../types.ts";
 import { sendMessage } from "../utils/telegram.ts";
 import { upsertSession } from "../utils/session.ts";
 import { getUserStats } from "../utils/db.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ADMIN_ID = parseInt(Deno.env.get("ADMIN_TELEGRAM_ID") ?? "0");
 const MAX_USERS = parseInt(Deno.env.get("MAX_USERS") ?? "0");
@@ -15,7 +16,9 @@ export const HELP =
   `  Vedi chi offre quella carta\n` +
   `  Es: <code>CERCO Roma;3</code>\n\n` +
   `<code>LISTA</code>\n` +
-  `  Mostra le collezioni con numero di offerte attive`;
+  `  Mostra le collezioni con numero di offerte attive\n\n` +
+  `<code>CANCELLAMI</code>\n` +
+  `  Elimina tutti i tuoi dati e annunci dal bot`;
 
 export async function handleStart(msg: TelegramMessage, hasNickname: boolean) {
   if (hasNickname) {
@@ -27,6 +30,24 @@ export async function handleStart(msg: TelegramMessage, hasNickname: boolean) {
         `Per iniziare, inviami il tuo <b>nickname WeWard</b>:`,
     );
   }
+}
+
+export async function handleCancellami(msg: TelegramMessage) {
+  const db = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+  const userId = msg.from.id;
+
+  await Promise.all([
+    db.from("annunci").delete().eq("telegram_user_id", userId),
+    db.from("user_sessions").delete().eq("telegram_user_id", userId),
+  ]);
+
+  await sendMessage(
+    msg.chat.id,
+    `✅ I tuoi dati sono stati eliminati.\n\nNickname, annunci e iscrizione sono stati cancellati.\nPuoi riscriverti in qualsiasi momento con /start.`,
+  );
 }
 
 export async function handleIscritti(msg: TelegramMessage) {

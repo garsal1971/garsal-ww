@@ -5,7 +5,7 @@ import { purgeExpired } from "./utils/db.ts";
 import { handleOffro } from "./handlers/offro.ts";
 import { handleCerco } from "./handlers/cerco.ts";
 import { handleLista } from "./handlers/lista.ts";
-import { handleNicknameInput, handleStart, handleIscritti, HELP } from "./handlers/commands.ts";
+import { handleNicknameInput, handleStart, handleIscritti, handleCancellami, HELP } from "./handlers/commands.ts";
 import { handleAccetto, showDisclaimer } from "./handlers/disclaimer.ts";
 
 Deno.serve(async (req: Request) => {
@@ -55,6 +55,12 @@ async function handleUpdate(update: TelegramUpdate) {
   // ── Admin ──────────────────────────────────────────────────────────────────
   if (upper === "ISCRITTI") {
     await handleIscritti(msg);
+    return;
+  }
+
+  // ── Sempre disponibile: cancellazione dati ─────────────────────────────────
+  if (upper === "CANCELLAMI") {
+    await handleCancellami(msg);
     return;
   }
 
