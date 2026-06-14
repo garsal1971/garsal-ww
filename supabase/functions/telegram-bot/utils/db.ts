@@ -64,6 +64,21 @@ export async function getOfferte(
   return (data ?? []) as OffertaRow[];
 }
 
+export async function getOfferteCollezione(
+  collezione_id: number,
+): Promise<OffertaRow[]> {
+  const { data, error } = await client()
+    .from("annunci")
+    .select("*, collezioni(nome)")
+    .eq("collezione_id", collezione_id)
+    .eq("tipo", "ho")
+    .gt("expires_at", new Date().toISOString())
+    .order("numero_carta")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as OffertaRow[];
+}
+
 // ── List (LISTA) ──────────────────────────────────────────────────────────────
 
 export async function countOffertePerCollezione(): Promise<Map<number, number>> {
