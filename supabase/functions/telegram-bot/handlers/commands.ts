@@ -1,62 +1,46 @@
 import type { TelegramMessage } from "../types.ts";
 import { sendMessage } from "../utils/telegram.ts";
-import { getSession, setState, upsertSession } from "../utils/session.ts";
-import { deleteAllUserAnnunci, getUserAnnunci } from "../utils/db.ts";
-import { mainMenu, myAnnunciMessage } from "./keyboards.ts";
+import { upsertSession } from "../utils/session.ts";
 
-export async function handleStart(msg: TelegramMessage) {
-  const userId = msg.from.id;
-  const username = msg.from.username;
+export const HELP =
+  `<b>Comandi disponibili:</b>\n\n` +
+  `<code>OFFRO collezione;carta;cosa cerco</code>\n` +
+  `  Pubblica un annuncio di scambio\n` +
+  `  Es: <code>OFFRO Roma;3;cerco la 5 di Parigi</code>\n\n` +
+  `<code>CERCO collezione;carta</code>\n` +
+  `  Vedi chi offre quella carta\n` +
+  `  Es: <code>CERCO Roma;3</code>\n\n` +
+  `<code>LISTA</code>\n` +
+  `  Mostra le collezioni con numero di offerte attive`;
 
-  await upsertSession(userId, { telegram_username: username });
-  const session = await getSession(userId);
-
-  if (session?.nickname_weward) {
-    await sendMessage(
-      msg.chat.id,
-      `Bentornato, <b>${session.nickname_weward}</b>! 👋\nCosa vuoi fare?`,
-      mainMenu(),
-    );
+export async function handleStart(msg: TelegramMessage, hasNickname: boolean) {
+  if (hasNickname) {
+    await sendMessage(msg.chat.id, HELP);
   } else {
-    await setState(userId, "waiting_nickname");
     await sendMessage(
       msg.chat.id,
-      `Ciao! 👋 Benvenuto nel bot per lo scambio di <b>WeCards</b>.\n\nPer iniziare, inviami il tuo <b>nickname WeWard</b> (quello visibile nel profilo):`,
+      `Ciao! 👋 Benvenuto nel bot per lo scambio di <b>WeCards</b>.\n\n` +
+        `Per iniziare, inviami il tuo <b>nickname WeWard</b>:`,
     );
   }
 }
 
-export async function handleHelp(msg: TelegramMessage) {
+export async function handleNicknameInput(msg: TelegramMessage) {
+  const nickname = msg.text?.trim();
+  if (!nickname || nickname.length < 2) {
+    await sendMessage(msg.chat.id, "Nickname non valido (min. 2 caratteri). Riprova:");
+    return false;
+  }
+
+  await upsertSession(msg.from.id, {
+    telegram_username: msg.from.username,
+    nickname_weward: nickname,
+    state: "idle",
+  });
+
   await sendMessage(
     msg.chat.id,
-    `<b>Come funziona il bot?</b>\n\n` +
-      `1️⃣ Imposta il tuo nickname WeWard\n` +
-      `2️⃣ Pubblica un annuncio: <i>ho doppione</i> o <i>cerco</i> una carta\n` +
-      `3️⃣ Il bot cerca automaticamente i match\n` +
-      `4️⃣ Se trovato, ti condivido l'username Telegram dell'altro utente\n` +
-      `5️⃣ Vi mettete d'accordo direttamente su Telegram!\n\n` +
-      `Gli annunci scadono dopo <b>7 giorni</b> di inattività.\n\n` +
-      `<b>Comandi:</b>\n` +
-      `/start – Torna al menu principale\n` +
-      `/cerca – Cerca una carta senza pubblicare\n` +
-      `/miei – I tuoi annunci attivi\n` +
-      `/cancella – Elimina tutti i tuoi annunci\n` +
-      `/help – Mostra questo messaggio`,
+    `✅ Nickname impostato: <b>${nickname}</b>\n\n${HELP}`,
   );
-}
-
-export async function handleMieiAnnunci(msg: TelegramMessage) {
-  const annunci = await getUserAnnunci(msg.from.id);
-  const { text, keyboard } = myAnnunciMessage(annunci);
-  await sendMessage(msg.chat.id, text, keyboard);
-}
-
-export async function handleCancellaTutti(msg: TelegramMessage) {
-  await deleteAllUserAnnunci(msg.from.id);
-  await setState(msg.from.id, "idle");
-  await sendMessage(
-    msg.chat.id,
-    `✅ Tutti i tuoi annunci sono stati eliminati.`,
-    mainMenu(),
-  );
+  return true;
 }

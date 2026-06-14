@@ -1,0 +1,1 @@
+ALTER TABLE annunci ADD COLUMN IF NOT EXISTS testo_libero TEXT;

@@ -1,26 +1,14 @@
 import type { TelegramUpdate } from "./types.ts";
-import { handleCallbackQuery } from "./handlers/callbacks.ts";
-import {
-  handleCancellaTutti,
-  handleHelp,
-  handleMieiAnnunci,
-  handleStart,
-} from "./handlers/commands.ts";
-import {
-  handleNicknameInput,
-  handleQuantitaInput,
-  startSearchFlow,
-} from "./handlers/flow.ts";
-import { getSession } from "./utils/session.ts";
+import { getSession, upsertSession } from "./utils/session.ts";
 import { sendMessage } from "./utils/telegram.ts";
-import { mainMenu } from "./handlers/keyboards.ts";
 import { purgeExpired } from "./utils/db.ts";
+import { handleOffro } from "./handlers/offro.ts";
+import { handleCerco } from "./handlers/cerco.ts";
+import { handleLista } from "./handlers/lista.ts";
+import { handleNicknameInput, handleStart, HELP } from "./handlers/commands.ts";
 
 Deno.serve(async (req: Request) => {
-  // Supabase Edge Functions require a 200 response quickly
-  if (req.method !== "POST") {
-    return new Response("OK", { status: 200 });
-  }
+  if (req.method !== "POST") return new Response("OK", { status: 200 });
 
   try {
     const update: TelegramUpdate = await req.json();
@@ -33,62 +21,53 @@ Deno.serve(async (req: Request) => {
 });
 
 async function handleUpdate(update: TelegramUpdate) {
-  // Opportunistically purge expired announcements
   purgeExpired().catch(console.error);
 
-  if (update.callback_query) {
-    await handleCallbackQuery(update.callback_query);
-    return;
-  }
-
   const msg = update.message;
-  if (!msg || !msg.text) return;
+  if (!msg?.text) return;
 
-  const text = msg.text.trim();
+  const raw = msg.text.trim();
+  const upper = raw.toUpperCase();
   const userId = msg.from.id;
 
-  // ── Commands (always available) ──────────────────────────────────────────────
-  if (text.startsWith("/start")) {
-    await handleStart(msg);
-    return;
+  // Ensure session exists
+  let session = await getSession(userId);
+  if (!session) {
+    await upsertSession(userId, {
+      telegram_username: msg.from.username,
+      state: "waiting_nickname",
+    });
+    session = await getSession(userId);
   }
-  if (text.startsWith("/help")) {
-    await handleHelp(msg);
-    return;
-  }
-  if (text.startsWith("/miei")) {
-    await handleMieiAnnunci(msg);
-    return;
-  }
-  if (text.startsWith("/cancella")) {
-    await handleCancellaTutti(msg);
-    return;
-  }
-  if (text.startsWith("/cerca")) {
-    await startSearchFlow(msg.chat.id, msg.from.id);
+
+  // /start è sempre disponibile
+  if (upper.startsWith("/START")) {
+    await handleStart(msg, !!session?.nickname_weward);
     return;
   }
 
-  // ── State-based routing ──────────────────────────────────────────────────────
-  const session = await getSession(userId);
-  const state = session?.state ?? "waiting_nickname";
-
-  switch (state) {
-    case "waiting_nickname":
-      await handleNicknameInput(msg);
-      break;
-
-    case "waiting_quantita":
-      await handleQuantitaInput(msg);
-      break;
-
-    case "idle":
-    default:
-      await sendMessage(
-        msg.chat.id,
-        "Usa i pulsanti qui sotto o /help per vedere i comandi disponibili.",
-        mainMenu(),
-      );
-      break;
+  // Prima volta: chiedi nickname
+  if (!session?.nickname_weward) {
+    await handleNicknameInput(msg);
+    return;
   }
+
+  // ── Comandi ───────────────────────────────────────────────────────────────────
+
+  if (upper === "LISTA") {
+    await handleLista(msg);
+    return;
+  }
+
+  if (upper.startsWith("OFFRO")) {
+    await handleOffro(msg, raw.slice(5).trim(), session!);
+    return;
+  }
+
+  if (upper.startsWith("CERCO")) {
+    await handleCerco(msg, raw.slice(5).trim());
+    return;
+  }
+
+  await sendMessage(msg.chat.id, HELP);
 }
