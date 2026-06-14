@@ -1,5 +1,9 @@
 # Deploy – WeWard Telegram Bot
 
+> **Regola fondamentale:** tutti i deploy (Edge Function e migrazioni) partono
+> sempre dal branch **`master`**. Le GitHub Actions leggono il codice da master.
+> Prima di deployare, assicurarsi che le modifiche siano mergiate su master.
+
 ## Prerequisiti
 - Supabase CLI installata: `npm i -g supabase`
 - Progetto Supabase creato su [supabase.com](https://supabase.com)
