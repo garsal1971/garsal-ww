@@ -5,7 +5,7 @@ import { getUserStats } from "../utils/db.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ADMIN_ID = parseInt(Deno.env.get("ADMIN_TELEGRAM_ID") ?? "0");
-const MAX_USERS = parseInt(Deno.env.get("MAX_USERS") ?? "0");
+const MAX_USERS = parseInt(Deno.env.get("MAX_USERS") ?? "50");
 
 export const HELP =
   `<b>Comandi disponibili:</b>\n\n` +
