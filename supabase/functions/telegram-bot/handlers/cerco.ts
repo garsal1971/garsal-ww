@@ -58,12 +58,10 @@ export async function handleCerco(msg: TelegramMessage, args: string) {
       return;
     }
 
-    const lines = offerte.map(formatOfferta);
+    const lines = offerte.map((o) => formatOfferta(o, carta, collezione.nome));
     await sendMessage(
       msg.chat.id,
-      `🃏 <b>${collezione.nome} – Carta ${carta}</b>\n` +
-        `${offerte.length} offerta/e:\n\n` +
-        lines.join("\n\n"),
+      `🃏 <b>${collezione.nome} – Carta ${carta}</b>\n\n` + lines.join("\n\n"),
     );
     return;
   }
@@ -88,20 +86,29 @@ export async function handleCerco(msg: TelegramMessage, args: string) {
   const sections: string[] = [];
   for (const [carta, list] of [...grouped.entries()].sort((a, b) => a[0] - b[0])) {
     sections.push(
-      `🃏 <b>Carta ${carta}</b> (${list.length}):\n` + list.map(formatOfferta).join("\n"),
+      `🃏 <b>Carta ${carta}:</b>\n` +
+        list.map((o) => formatOfferta(o, carta, collezione.nome)).join("\n"),
     );
   }
 
   await sendMessage(
     msg.chat.id,
-    `📚 <b>${collezione.nome}</b> – ${offerte.length} offerta/e totali\n\n` +
-      sections.join("\n\n"),
+    `📚 <b>${collezione.nome}</b>\n\n` + sections.join("\n\n"),
   );
 }
 
-function formatOfferta(o: { telegram_username?: string; nickname_weward: string; testo_libero: string }) {
-  const user = o.telegram_username
-    ? `@${o.telegram_username}`
-    : `<i>${o.nickname_weward}</i>`;
-  return `👤 ${user} (${o.nickname_weward})\n   💬 <i>${o.testo_libero}</i>`;
+function formatOfferta(
+  o: { telegram_username?: string; nickname_weward: string; testo_libero: string },
+  carta: number,
+  collezione: string,
+) {
+  if (o.telegram_username) {
+    const pretext = encodeURIComponent(`Ciao, cerco la carta ${carta} di ${collezione}`);
+    const link = `https://t.me/${o.telegram_username}?text=${pretext}`;
+    return (
+      `👤 <a href="${link}">@${o.telegram_username}</a> (${o.nickname_weward})\n` +
+      `   💬 <i>${o.testo_libero}</i>`
+    );
+  }
+  return `👤 <i>${o.nickname_weward}</i>\n   💬 <i>${o.testo_libero}</i>`;
 }
