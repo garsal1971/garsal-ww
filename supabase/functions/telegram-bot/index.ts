@@ -5,7 +5,8 @@ import { purgeExpired } from "./utils/db.ts";
 import { handleOffro } from "./handlers/offro.ts";
 import { handleCerco } from "./handlers/cerco.ts";
 import { handleLista } from "./handlers/lista.ts";
-import { handleNicknameInput, handleStart, HELP } from "./handlers/commands.ts";
+import { handleNicknameInput, handleStart, handleIscritti, HELP } from "./handlers/commands.ts";
+import { handleAccetto, showDisclaimer } from "./handlers/disclaimer.ts";
 
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return new Response("OK", { status: 200 });
@@ -35,24 +36,45 @@ async function handleUpdate(update: TelegramUpdate) {
   if (!session) {
     await upsertSession(userId, {
       telegram_username: msg.from.username,
-      state: "waiting_nickname",
+      state: "pending_disclaimer",
+      status: "pending",
     });
     session = await getSession(userId);
   }
 
   // /start è sempre disponibile
   if (upper.startsWith("/START")) {
-    await handleStart(msg, !!session?.nickname_weward);
+    if (session?.status === "active") {
+      await handleStart(msg, !!session.nickname_weward);
+    } else {
+      await showDisclaimer(msg.chat.id);
+    }
     return;
   }
 
-  // Prima volta: chiedi nickname
-  if (!session?.nickname_weward) {
+  // ── Admin ──────────────────────────────────────────────────────────────────
+  if (upper === "ISCRITTI") {
+    await handleIscritti(msg);
+    return;
+  }
+
+  // ── Utente non ancora iscritto ─────────────────────────────────────────────
+  if (session?.status !== "active") {
+    if (upper === "ACCETTO") {
+      await handleAccetto(msg);
+    } else {
+      await showDisclaimer(msg.chat.id);
+    }
+    return;
+  }
+
+  // ── Utente iscritto ma senza nickname ──────────────────────────────────────
+  if (!session.nickname_weward) {
     await handleNicknameInput(msg);
     return;
   }
 
-  // ── Comandi ───────────────────────────────────────────────────────────────────
+  // ── Comandi attivi ─────────────────────────────────────────────────────────
 
   if (upper === "LISTA") {
     await handleLista(msg);
@@ -60,7 +82,7 @@ async function handleUpdate(update: TelegramUpdate) {
   }
 
   if (upper.startsWith("OFFRO")) {
-    await handleOffro(msg, raw.slice(5).trim(), session!);
+    await handleOffro(msg, raw.slice(5).trim(), session);
     return;
   }
 

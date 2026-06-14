@@ -27,13 +27,17 @@ export interface TelegramChat {
 
 // ── App domain types ──────────────────────────────────────────────────────────
 
-export type UserState = 'idle' | 'waiting_nickname';
+export type UserState = 'idle' | 'waiting_nickname' | 'pending_disclaimer';
+
+export type UserStatus = 'pending' | 'active';
 
 export interface UserSession {
   telegram_user_id: number;
   telegram_username?: string;
   nickname_weward?: string;
   state: UserState;
+  status: UserStatus;
+  accepted_at?: string;
   updated_at: string;
 }
 

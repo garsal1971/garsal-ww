@@ -1,6 +1,10 @@
 import type { TelegramMessage } from "../types.ts";
 import { sendMessage } from "../utils/telegram.ts";
 import { upsertSession } from "../utils/session.ts";
+import { getUserStats } from "../utils/db.ts";
+
+const ADMIN_ID = parseInt(Deno.env.get("ADMIN_TELEGRAM_ID") ?? "0");
+const MAX_USERS = parseInt(Deno.env.get("MAX_USERS") ?? "0");
 
 export const HELP =
   `<b>Comandi disponibili:</b>\n\n` +
@@ -23,6 +27,19 @@ export async function handleStart(msg: TelegramMessage, hasNickname: boolean) {
         `Per iniziare, inviami il tuo <b>nickname WeWard</b>:`,
     );
   }
+}
+
+export async function handleIscritti(msg: TelegramMessage) {
+  if (ADMIN_ID === 0 || msg.from.id !== ADMIN_ID) return;
+  const stats = await getUserStats();
+  const maxLabel = MAX_USERS > 0 ? `/${MAX_USERS}` : "";
+  await sendMessage(
+    msg.chat.id,
+    `📊 <b>Statistiche iscritti:</b>\n\n` +
+      `✅ Attivi: <b>${stats.active}${maxLabel}</b>\n` +
+      `⏳ In attesa: <b>${stats.pending}</b>\n` +
+      `👥 Totale: <b>${stats.active + stats.pending}</b>`,
+  );
 }
 
 export async function handleNicknameInput(msg: TelegramMessage) {
