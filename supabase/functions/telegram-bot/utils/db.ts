@@ -75,6 +75,36 @@ export async function purgeExpired() {
   if (error) throw error;
 }
 
+// ── Search ────────────────────────────────────────────────────────────────────
+
+export interface CartaAnnunci {
+  ho: (Annuncio & { collezioni: Collezione })[];
+  cerco: (Annuncio & { collezioni: Collezione })[];
+}
+
+/** All active announcements for a specific card (for /cerca). */
+export async function findCartaAnnunci(
+  collezione_id: number,
+  numero_carta: number,
+  excludeUserId: number,
+): Promise<CartaAnnunci> {
+  const { data, error } = await client()
+    .from("annunci")
+    .select("*, collezioni(nome)")
+    .eq("collezione_id", collezione_id)
+    .eq("numero_carta", numero_carta)
+    .neq("telegram_user_id", excludeUserId)
+    .gt("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  const all = (data ?? []) as (Annuncio & { collezioni: Collezione })[];
+  return {
+    ho: all.filter((a) => a.tipo === "ho"),
+    cerco: all.filter((a) => a.tipo === "cerco"),
+  };
+}
+
 // ── Match logic ───────────────────────────────────────────────────────────────
 
 export interface MatchResult {
@@ -132,4 +162,27 @@ export async function findMatches(
   }
 
   return results;
+}
+
+/**
+ * Returns existing announcements that should be notified about a new announcement.
+ * When User B posts "ho carta X", notify all users who already have "cerco carta X".
+ * When User B posts "cerco carta X", notify all users who already have "ho carta X".
+ */
+export async function findUsersToNotify(
+  newAnnuncio: Annuncio,
+): Promise<(Annuncio & { collezioni: Collezione })[]> {
+  const oppositeType = newAnnuncio.tipo === "ho" ? "cerco" : "ho";
+
+  const { data, error } = await client()
+    .from("annunci")
+    .select("*, collezioni(nome)")
+    .eq("collezione_id", newAnnuncio.collezione_id)
+    .eq("numero_carta", newAnnuncio.numero_carta)
+    .eq("tipo", oppositeType)
+    .neq("telegram_user_id", newAnnuncio.telegram_user_id)
+    .gt("expires_at", new Date().toISOString());
+
+  if (error) throw error;
+  return (data ?? []) as (Annuncio & { collezioni: Collezione })[];
 }

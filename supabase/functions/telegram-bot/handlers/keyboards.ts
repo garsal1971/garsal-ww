@@ -3,6 +3,7 @@ import type { Annuncio, Collezione, InlineKeyboard } from "../types.ts";
 export function mainMenu(): InlineKeyboard {
   return [
     [{ text: "📢 Pubblica annuncio", callback_data: "menu:pubblica" }],
+    [{ text: "🔍 Cerca carta", callback_data: "menu:cerca" }],
     [{ text: "📋 I miei annunci", callback_data: "menu:miei" }],
   ];
 }
@@ -63,6 +64,37 @@ export function myAnnunciMessage(
     text: `<b>I tuoi annunci attivi:</b>\n\n${lines.join("\n")}`,
     keyboard,
   };
+}
+
+export function searchResultMessage(
+  collNome: string,
+  numeroCarta: number,
+  ho: Array<Annuncio & { collezioni: Collezione }>,
+  cerco: Array<Annuncio & { collezioni: Collezione }>,
+): string {
+  const header = `🔍 <b>Carta ${numeroCarta} – ${collNome}</b>\n`;
+
+  const formatUser = (a: Annuncio) => {
+    const user = a.telegram_username ? `@${a.telegram_username}` : `<i>${a.nickname_weward}</i>`;
+    const qty = a.tipo === "ho" && a.quantita ? ` (x${a.quantita})` : "";
+    return `  👤 ${user}${qty}`;
+  };
+
+  if (ho.length === 0 && cerco.length === 0) {
+    return header + "\nNessun annuncio attivo per questa carta.";
+  }
+
+  const parts: string[] = [header];
+  if (ho.length > 0) {
+    parts.push(`\n🔁 <b>Chi ha questa carta (${ho.length}):</b>`);
+    parts.push(...ho.map(formatUser));
+  }
+  if (cerco.length > 0) {
+    parts.push(`\n🎯 <b>Chi la cerca (${cerco.length}):</b>`);
+    parts.push(...cerco.map(formatUser));
+  }
+  parts.push("\n<i>Contatta direttamente gli utenti su Telegram per accordarvi.</i>");
+  return parts.join("\n");
 }
 
 export function matchMessage(

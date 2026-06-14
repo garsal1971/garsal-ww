@@ -48,7 +48,9 @@ export type UserState =
   | 'selecting_collection'
   | 'selecting_carta'
   | 'selecting_tipo'
-  | 'waiting_quantita';
+  | 'waiting_quantita'
+  | 'search_selecting_collection'
+  | 'search_selecting_carta';
 
 export interface StateData {
   collezione_id?: number;

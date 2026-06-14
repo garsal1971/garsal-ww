@@ -9,7 +9,7 @@ import {
 import {
   handleNicknameInput,
   handleQuantitaInput,
-  startPublishFlow,
+  startSearchFlow,
 } from "./handlers/flow.ts";
 import { getSession } from "./utils/session.ts";
 import { sendMessage } from "./utils/telegram.ts";
@@ -62,6 +62,10 @@ async function handleUpdate(update: TelegramUpdate) {
   }
   if (text.startsWith("/cancella")) {
     await handleCancellaTutti(msg);
+    return;
+  }
+  if (text.startsWith("/cerca")) {
+    await startSearchFlow(msg.chat.id, msg.from.id);
     return;
   }
 

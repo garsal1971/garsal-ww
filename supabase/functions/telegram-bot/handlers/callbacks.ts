@@ -6,8 +6,11 @@ import { mainMenu, myAnnunciMessage } from "./keyboards.ts";
 import {
   handleCartaSelected,
   handleCollectionSelected,
+  handleSearchCartaSelected,
+  handleSearchCollectionSelected,
   handleTipoSelected,
   startPublishFlow,
+  startSearchFlow,
 } from "./flow.ts";
 
 export async function handleCallbackQuery(cq: TelegramCallbackQuery) {
@@ -29,13 +32,16 @@ export async function handleCallbackQuery(cq: TelegramCallbackQuery) {
     await answerCallbackQuery(cq.id);
     const session = await getSession(userId);
     if (!session?.nickname_weward) {
-      await sendMessage(
-        chatId,
-        "Prima devi impostare il tuo nickname. Usa /start.",
-      );
+      await sendMessage(chatId, "Prima devi impostare il tuo nickname. Usa /start.");
       return;
     }
     await startPublishFlow(chatId, userId);
+    return;
+  }
+
+  if (data === "menu:cerca") {
+    await answerCallbackQuery(cq.id);
+    await startSearchFlow(chatId, userId);
     return;
   }
 
@@ -59,19 +65,29 @@ export async function handleCallbackQuery(cq: TelegramCallbackQuery) {
   }
 
   // ── Flow: collection selected ────────────────────────────────────────────────
+  // Route to publish or search based on current session state
   if (data.startsWith("coll:")) {
-    // format: coll:{id}:{nome}
     const parts = data.split(":");
     const collId = parseInt(parts[1]);
     const collNome = parts.slice(2).join(":");
-    await handleCollectionSelected(chatId, userId, messageId, cq.id, collId, collNome);
+    const session = await getSession(userId);
+    if (session?.state === "search_selecting_collection") {
+      await handleSearchCollectionSelected(chatId, userId, messageId, cq.id, collId, collNome);
+    } else {
+      await handleCollectionSelected(chatId, userId, messageId, cq.id, collId, collNome);
+    }
     return;
   }
 
   // ── Flow: card number selected ───────────────────────────────────────────────
   if (data.startsWith("carta:")) {
     const numero = parseInt(data.slice(6));
-    await handleCartaSelected(chatId, userId, messageId, cq.id, numero);
+    const session = await getSession(userId);
+    if (session?.state === "search_selecting_carta") {
+      await handleSearchCartaSelected(chatId, userId, messageId, cq.id, numero);
+    } else {
+      await handleCartaSelected(chatId, userId, messageId, cq.id, numero);
+    }
     return;
   }
 

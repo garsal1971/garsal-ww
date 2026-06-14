@@ -38,6 +38,7 @@ export async function handleHelp(msg: TelegramMessage) {
       `Gli annunci scadono dopo <b>7 giorni</b> di inattività.\n\n` +
       `<b>Comandi:</b>\n` +
       `/start – Torna al menu principale\n` +
+      `/cerca – Cerca una carta senza pubblicare\n` +
       `/miei – I tuoi annunci attivi\n` +
       `/cancella – Elimina tutti i tuoi annunci\n` +
       `/help – Mostra questo messaggio`,

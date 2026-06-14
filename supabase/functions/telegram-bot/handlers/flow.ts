@@ -1,18 +1,27 @@
 /**
- * Handles the multi-step announcement creation flow.
+ * Handles the multi-step announcement creation flow and the /cerca search flow.
  * Text messages are routed here when the user is mid-flow.
  */
 import type { TelegramMessage } from "../types.ts";
 import { sendMessage } from "../utils/telegram.ts";
-import { createAnnuncio, findMatches, getCollezioni } from "../utils/db.ts";
+import {
+  createAnnuncio,
+  findCartaAnnunci,
+  findMatches,
+  findUsersToNotify,
+  getCollezioni,
+} from "../utils/db.ts";
 import { getSession, setState, upsertSession } from "../utils/session.ts";
 import {
   cartaKeyboard,
   collectionKeyboard,
   mainMenu,
   matchMessage,
+  searchResultMessage,
   tipoKeyboard,
 } from "./keyboards.ts";
+
+// ── Nickname ──────────────────────────────────────────────────────────────────
 
 export async function handleNicknameInput(msg: TelegramMessage) {
   const nickname = msg.text?.trim();
@@ -34,6 +43,8 @@ export async function handleNicknameInput(msg: TelegramMessage) {
     mainMenu(),
   );
 }
+
+// ── Publish flow ──────────────────────────────────────────────────────────────
 
 export async function startPublishFlow(chatId: number, userId: number) {
   const collezioni = await getCollezioni();
@@ -168,6 +179,9 @@ async function saveAnnuncio(
 
   await setState(userId, "idle");
 
+  // Notify existing users whose announcements now match this new one (fire-and-forget)
+  notifyExistingUsers(annuncio).catch(console.error);
+
   const matches = await findMatches(annuncio);
   const matchText = matchMessage(matches, tipo);
 
@@ -182,3 +196,105 @@ async function saveAnnuncio(
     mainMenu(),
   );
 }
+
+async function notifyExistingUsers(
+  newAnnuncio: Awaited<ReturnType<typeof createAnnuncio>>,
+) {
+  const usersToNotify = await findUsersToNotify(newAnnuncio);
+  if (usersToNotify.length === 0) return;
+
+  const { sendMessage: send } = await import("../utils/telegram.ts");
+
+  const collNome =
+    (newAnnuncio as { collezioni?: { nome: string } }).collezioni?.nome ??
+    `#${newAnnuncio.collezione_id}`;
+  const newUser = newAnnuncio.telegram_username
+    ? `@${newAnnuncio.telegram_username}`
+    : `<i>${newAnnuncio.nickname_weward}</i>`;
+
+  const tipoLabel = newAnnuncio.tipo === "ho" ? "ha un doppione" : "sta cercando";
+  const qtyLabel =
+    newAnnuncio.tipo === "ho" && newAnnuncio.quantita
+      ? ` (x${newAnnuncio.quantita})`
+      : "";
+
+  const text =
+    `🔔 <b>Nuovo match!</b>\n\n` +
+    `${newUser} ${tipoLabel} la carta <b>${newAnnuncio.numero_carta}</b> di <i>${collNome}</i>${qtyLabel}.\n\n` +
+    `Contattalo su Telegram per accordarvi sullo scambio!`;
+
+  for (const u of usersToNotify) {
+    // In private chats, chat_id === user_id
+    await send(u.telegram_user_id, text, mainMenu()).catch(console.error);
+  }
+}
+
+// ── Search flow (/cerca) ──────────────────────────────────────────────────────
+
+export async function startSearchFlow(chatId: number, userId: number) {
+  const collezioni = await getCollezioni();
+  if (collezioni.length === 0) {
+    await sendMessage(chatId, "Nessuna collezione disponibile al momento.");
+    return;
+  }
+  await setState(userId, "search_selecting_collection");
+  await sendMessage(
+    chatId,
+    "🔍 <b>Cerca carta – Scegli la collezione:</b>",
+    collectionKeyboard(collezioni),
+  );
+}
+
+export async function handleSearchCollectionSelected(
+  chatId: number,
+  userId: number,
+  messageId: number,
+  callbackId: string,
+  collId: number,
+  collNome: string,
+) {
+  await setState(userId, "search_selecting_carta", {
+    collezione_id: collId,
+    collezione_nome: collNome,
+  });
+  const { editMessage, answerCallbackQuery } = await import(
+    "../utils/telegram.ts"
+  );
+  await answerCallbackQuery(callbackId);
+  await editMessage(
+    chatId,
+    messageId,
+    `🔍 Cerca in: <b>${collNome}</b>\n\n🃏 <b>Quale carta vuoi cercare?</b>`,
+    cartaKeyboard(),
+  );
+}
+
+export async function handleSearchCartaSelected(
+  chatId: number,
+  userId: number,
+  messageId: number,
+  callbackId: string,
+  numeroCarta: number,
+) {
+  const session = await getSession(userId);
+  const sd = session?.state_data;
+  if (!sd?.collezione_id || !sd?.collezione_nome) {
+    await answerCallbackQuery(callbackId, "Sessione scaduta, riprova.");
+    return;
+  }
+
+  await setState(userId, "idle");
+
+  const { editMessage, answerCallbackQuery } = await import(
+    "../utils/telegram.ts"
+  );
+  await answerCallbackQuery(callbackId);
+
+  const { ho, cerco } = await findCartaAnnunci(sd.collezione_id, numeroCarta, userId);
+  const text = searchResultMessage(sd.collezione_nome, numeroCarta, ho, cerco);
+
+  await editMessage(chatId, messageId, text, mainMenu());
+}
+
+// Re-export for callbacks.ts
+export { answerCallbackQuery } from "../utils/telegram.ts";
