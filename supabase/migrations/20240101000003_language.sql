@@ -1,0 +1,1 @@
+ALTER TABLE user_sessions ADD COLUMN IF NOT EXISTS language TEXT NOT NULL DEFAULT 'it';

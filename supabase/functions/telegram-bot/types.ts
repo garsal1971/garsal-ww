@@ -27,9 +27,11 @@ export interface TelegramChat {
 
 // ── App domain types ──────────────────────────────────────────────────────────
 
-export type UserState = 'idle' | 'waiting_nickname' | 'pending_disclaimer';
+export type UserState = 'idle' | 'waiting_nickname' | 'pending_disclaimer' | 'selecting_language';
 
 export type UserStatus = 'pending' | 'active';
+
+export type Lang = 'it' | 'es';
 
 export interface StateData {
   offer_map?: Record<string, number>; // progressive number → db id
@@ -44,6 +46,7 @@ export interface UserSession {
   state_data?: StateData;
   accepted_at?: string;
   updated_at: string;
+  language?: Lang;
 }
 
 export interface Collezione {

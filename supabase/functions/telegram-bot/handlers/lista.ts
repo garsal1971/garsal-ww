@@ -1,15 +1,16 @@
-import type { TelegramMessage } from "../types.ts";
+import type { TelegramMessage, Lang } from "../types.ts";
 import { sendMessage } from "../utils/telegram.ts";
 import { countOffertePerCollezione, getCollezioni } from "../utils/db.ts";
+import { t } from "../utils/i18n.ts";
 
-export async function handleLista(msg: TelegramMessage) {
+export async function handleLista(msg: TelegramMessage, lang: Lang) {
   const [collezioni, counts] = await Promise.all([
     getCollezioni(),
     countOffertePerCollezione(),
   ]);
 
   if (collezioni.length === 0) {
-    await sendMessage(msg.chat.id, "Nessuna collezione disponibile.");
+    await sendMessage(msg.chat.id, t(lang).listaEmpty);
     return;
   }
 
@@ -20,6 +21,6 @@ export async function handleLista(msg: TelegramMessage) {
 
   await sendMessage(
     msg.chat.id,
-    `📚 <b>Collezioni disponibili:</b>\n\n${lines.join("\n")}`,
+    `${t(lang).listaHeader}\n\n${lines.join("\n")}`,
   );
 }

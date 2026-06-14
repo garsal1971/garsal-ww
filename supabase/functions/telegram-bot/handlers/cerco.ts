@@ -1,17 +1,12 @@
-import type { TelegramMessage } from "../types.ts";
+import type { TelegramMessage, Lang } from "../types.ts";
 import { sendMessage } from "../utils/telegram.ts";
 import { getCollezioni, getOfferte, getOfferteCollezione } from "../utils/db.ts";
 import { searchCollezione } from "../utils/collections.ts";
+import { t } from "../utils/i18n.ts";
 
-export async function handleCerco(msg: TelegramMessage, args: string) {
+export async function handleCerco(msg: TelegramMessage, args: string, lang: Lang) {
   if (!args) {
-    await sendMessage(
-      msg.chat.id,
-      "Formato:\n" +
-        "<code>CERCO collezione</code> – tutte le offerte della collezione\n" +
-        "<code>CERCO collezione;carta</code> – offerte per carta specifica\n\n" +
-        "Es: <code>CERCO Roma</code> oppure <code>CERCO Roma;3</code>",
-    );
+    await sendMessage(msg.chat.id, t(lang).cercoUsage);
     return;
   }
 
@@ -22,20 +17,13 @@ export async function handleCerco(msg: TelegramMessage, args: string) {
   const result = searchCollezione(collInput, collezioni);
 
   if (result.status === "not_found") {
-    await sendMessage(
-      msg.chat.id,
-      `❌ Collezione "<b>${collInput}</b>" non trovata.\n` +
-        `Scrivi <code>LISTA</code> per vedere le collezioni disponibili.`,
-    );
+    await sendMessage(msg.chat.id, t(lang).collectionNotFound(collInput));
     return;
   }
 
   if (result.status === "ambiguous") {
-    const nomi = result.matches.map((c) => `• ${c.nome}`).join("\n");
-    await sendMessage(
-      msg.chat.id,
-      `⚠️ Più collezioni trovate per "<b>${collInput}</b>":\n${nomi}\n\nSii più specifico.`,
-    );
+    const list = result.matches.map((c) => `• ${c.nome}`).join("\n");
+    await sendMessage(msg.chat.id, t(lang).collectionAmbiguous(collInput, list));
     return;
   }
 
@@ -45,20 +33,17 @@ export async function handleCerco(msg: TelegramMessage, args: string) {
   if (cartaInput) {
     const carta = parseInt(cartaInput);
     if (isNaN(carta) || carta < 1 || carta > 9) {
-      await sendMessage(msg.chat.id, "❌ Il numero carta deve essere tra 1 e 9.");
+      await sendMessage(msg.chat.id, t(lang).cercoInvalidFormat);
       return;
     }
 
     const offerte = await getOfferte(collezione.id, carta);
     if (offerte.length === 0) {
-      await sendMessage(
-        msg.chat.id,
-        `🃏 <b>${collezione.nome} – Carta ${carta}</b>\n\nNessuno offre questa carta al momento.`,
-      );
+      await sendMessage(msg.chat.id, t(lang).cercoNoOffers(collezione.nome, carta));
       return;
     }
 
-    const lines = offerte.map((o) => formatOfferta(o, carta, collezione.nome));
+    const lines = offerte.map((o) => formatOfferta(o, carta, collezione.nome, lang));
     await sendMessage(
       msg.chat.id,
       `🃏 <b>${collezione.nome} – Carta ${carta}</b>\n\n` + lines.join("\n\n"),
@@ -66,17 +51,13 @@ export async function handleCerco(msg: TelegramMessage, args: string) {
     return;
   }
 
-  // ── CERCO collezione (tutte le carte) ─────────────────────────────────────
+  // ── CERCO/BUSCO collezione (tutte le carte) ────────────────────────────────
   const offerte = await getOfferteCollezione(collezione.id);
   if (offerte.length === 0) {
-    await sendMessage(
-      msg.chat.id,
-      `📚 <b>${collezione.nome}</b>\n\nNessuna offerta attiva per questa collezione.`,
-    );
+    await sendMessage(msg.chat.id, t(lang).cercoHeader(collezione.nome));
     return;
   }
 
-  // Group by card number
   const grouped = new Map<number, typeof offerte>();
   for (const o of offerte) {
     if (!grouped.has(o.numero_carta)) grouped.set(o.numero_carta, []);
@@ -87,7 +68,7 @@ export async function handleCerco(msg: TelegramMessage, args: string) {
   for (const [carta, list] of [...grouped.entries()].sort((a, b) => a[0] - b[0])) {
     sections.push(
       `🃏 <b>Carta ${carta}:</b>\n` +
-        list.map((o) => formatOfferta(o, carta, collezione.nome)).join("\n"),
+        list.map((o) => formatOfferta(o, carta, collezione.nome, lang)).join("\n"),
     );
   }
 
@@ -101,9 +82,13 @@ function formatOfferta(
   o: { telegram_username?: string; nickname_weward: string; testo_libero: string },
   carta: number,
   collezione: string,
+  lang: Lang,
 ) {
   if (o.telegram_username) {
-    const pretext = encodeURIComponent(`Ciao, cerco la carta ${carta} di ${collezione}`);
+    const contactText = lang === "es"
+      ? `Hola, busco la carta ${carta} de ${collezione}`
+      : `Ciao, cerco la carta ${carta} di ${collezione}`;
+    const pretext = encodeURIComponent(contactText);
     const link = `https://t.me/${o.telegram_username}?text=${pretext}`;
     return (
       `👤 <a href="${link}">@${o.telegram_username}</a> (${o.nickname_weward})\n` +
