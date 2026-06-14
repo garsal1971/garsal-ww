@@ -18,8 +18,8 @@ export const HELP =
   `  Mostra le collezioni con numero di offerte attive\n\n` +
   `<code>MOSTRA OFFERTE</code>\n` +
   `  Elenca le tue offerte attive con numero progressivo\n\n` +
-  `<code>CANCELLA 1</code>\n` +
-  `  Cancella l'offerta numero 1 (dopo MOSTRA OFFERTE)\n\n` +
+  `<code>CANCELLA [prog]</code>\n` +
+  `  Cancella l'offerta con quel numero (dopo MOSTRA OFFERTE)\n\n` +
   `<code>CANCELLA TUTTE</code>\n` +
   `  Cancella tutte le tue offerte\n\n` +
   `<code>CANCELLAMI</code>\n` +
