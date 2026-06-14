@@ -384,12 +384,13 @@ public class MainActivity extends Activity {
             addGpsCoordToInput(last);
             return;
         }
-        // Richiedi fix fresco
+        // Richiedi fix fresco da GPS e Network in parallelo: vince il primo che risponde.
+        // removeUpdates(listener) rimuove il listener da tutti i provider registrati.
         Toast.makeText(this, "Acquisizione GPS in corso...", Toast.LENGTH_SHORT).show();
         readGpsButton.setEnabled(false);
-        final LocationListener[] ref = new LocationListener[1];
+        final LocationListener[] ref = {null};
         final Runnable timeout = () -> {
-            lm.removeUpdates(ref[0]);
+            if (ref[0] != null) lm.removeUpdates(ref[0]);
             readGpsButton.setEnabled(!MockLocationService.isRunning());
             Toast.makeText(this, "GPS: nessun segnale. Riprova all'aperto.", Toast.LENGTH_LONG).show();
         };
@@ -403,21 +404,23 @@ public class MainActivity extends Activity {
             }
             @Override public void onStatusChanged(String provider, int status, android.os.Bundle extras) {}
             @Override public void onProviderEnabled(String provider) {}
-            @Override
-            public void onProviderDisabled(String provider) {
-                lm.removeUpdates(this);
-                countdownHandler.removeCallbacks(timeout);
-                readGpsButton.setEnabled(!MockLocationService.isRunning());
-                Toast.makeText(MainActivity.this, "GPS non attivo. Attivarlo nelle impostazioni.", Toast.LENGTH_LONG).show();
-            }
+            @Override public void onProviderDisabled(String provider) {}
         };
+        boolean registeredAny = false;
         try {
             lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, ref[0], Looper.getMainLooper());
-            countdownHandler.postDelayed(timeout, 15_000);
-        } catch (Exception e) {
+            registeredAny = true;
+        } catch (Exception ignored) {}
+        try {
+            lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, ref[0], Looper.getMainLooper());
+            registeredAny = true;
+        } catch (Exception ignored) {}
+        if (!registeredAny) {
             readGpsButton.setEnabled(!MockLocationService.isRunning());
             Toast.makeText(this, "GPS non disponibile", Toast.LENGTH_SHORT).show();
+            return;
         }
+        countdownHandler.postDelayed(timeout, 30_000);
     }
 
     private void addGpsCoordToInput(Location loc) {
